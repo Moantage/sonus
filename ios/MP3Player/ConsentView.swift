@@ -25,29 +25,24 @@ struct ConsentView: View {
 
     var body: some View {
         ZStack {
-            Theme.background
+            Theme.glowBackground
 
             VStack(spacing: 0) {
                 // Header
                 VStack(spacing: 12) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .fill(Theme.surfaceRaised)
-                            .frame(width: 72, height: 72)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                    .stroke(Theme.hairline, lineWidth: 1)
-                            )
-                        Image(systemName: "lock.shield.fill")
-                            .font(.system(size: 32, weight: .regular))
-                            .foregroundColor(Theme.accent)
-                    }
+                    Image(systemName: "lock.shield.fill")
+                        .font(.system(size: 30, weight: .regular))
+                        .foregroundStyle(Theme.accent)
+                        .frame(width: 68, height: 68)
+                        .background(Theme.surfaceRaised, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .accessibilityHidden(true)
                     Text("Your privacy")
-                        .font(.system(size: 26, weight: .bold))
-                        .foregroundColor(Theme.textPrimary)
+                        .font(.system(.title, weight: .bold))
+                        .foregroundStyle(Theme.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
                     Text("Please review and accept before you continue.")
-                        .font(.system(size: 14))
-                        .foregroundColor(Theme.textSubtle)
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.textSubtle)
                         .multilineTextAlignment(.center)
                 }
                 .padding(.top, 32)
@@ -60,11 +55,11 @@ struct ConsentView: View {
                         ForEach(Self.sections, id: \.title) { section in
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(section.title)
-                                    .font(.system(size: 15, weight: .semibold))
-                                    .foregroundColor(Theme.textPrimary)
+                                    .font(.system(.subheadline, weight: .bold))
+                                    .foregroundStyle(Theme.textPrimary)
                                 Text(section.body)
-                                    .font(.system(size: 14))
-                                    .foregroundColor(Theme.textSubtle)
+                                    .font(.subheadline)
+                                    .foregroundStyle(Theme.textSubtle)
                                     .lineSpacing(3)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -72,18 +67,18 @@ struct ConsentView: View {
 
                         HStack(spacing: 6) {
                             Link("Full Terms of Service", destination: ConsentConfig.termsURL)
-                            Text("·").foregroundColor(Theme.subtleText)
+                            Text("·").foregroundStyle(Theme.textSubtle)
                             Link("Full Privacy Policy", destination: ConsentConfig.privacyURL)
                         }
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(.footnote, weight: .semibold))
                         .padding(.top, 4)
 
                         Text("Version \(ConsentConfig.currentVersion) · Last updated \(ConsentConfig.lastUpdated)")
-                            .font(.system(size: 11))
-                            .foregroundColor(Theme.subtleText.opacity(0.7))
+                            .font(.caption2)
+                            .foregroundStyle(Theme.textMuted)
                     }
                     .padding(20)
-                    .emberCard(cornerRadius: 18)
+                    .emberCard(cornerRadius: Theme.Radius.tile)
                     .padding(.horizontal, 20)
                     .padding(.bottom, 12)
                 }
@@ -94,23 +89,29 @@ struct ConsentView: View {
                         agreed.toggle()
                     } label: {
                         HStack(alignment: .top, spacing: 12) {
-                            Image(systemName: agreed ? "checkmark.square.fill" : "square")
-                                .font(.system(size: 22))
-                                .foregroundColor(agreed ? Theme.accent : Theme.textSubtle)
+                            Image(systemName: agreed ? "checkmark.circle.fill" : "circle")
+                                .font(.system(size: 24))
+                                .foregroundStyle(agreed ? Theme.accent : Theme.textSubtle)
+                                .contentTransition(.symbolEffect(.replace))
                             Text("I have read and agree to the Terms of Service and Privacy Policy, and I consent to the processing of my personal data as described above.")
-                                .font(.system(size: 13))
-                                .foregroundColor(Theme.textPrimary)
+                                .font(.footnote)
+                                .foregroundStyle(Theme.textPrimary)
                                 .multilineTextAlignment(.leading)
                                 .fixedSize(horizontal: false, vertical: true)
                             Spacer(minLength: 0)
                         }
                     }
+                    .buttonStyle(.plain)
+                    .sensoryFeedback(.selection, trigger: agreed)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isToggle)
+                    .accessibilityValue(agreed ? "Checked" : "Unchecked")
 
                     if let errorMessage {
                         InlineError(message: errorMessage)
                     }
 
-                    PrimaryButton(title: "Agree & Continue",
+                    PrimaryButton(title: "Agree and continue",
                                   isLoading: isSaving,
                                   isDisabled: !agreed) {
                         accept()
@@ -119,15 +120,15 @@ struct ConsentView: View {
                     Button("Decline and sign out") {
                         authManager.signOut()
                     }
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(Theme.subtleText)
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(Theme.textSubtle)
+                    .frame(minHeight: 44)
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 12)
                 .padding(.bottom, 24)
             }
         }
-        .preferredColorScheme(.light)
     }
 
     private func accept() {

@@ -127,7 +127,7 @@ private struct BannerStrip: View {
         AnchoredAdaptiveBanner(adUnitID: AdConfig.bannerUnitID, adSize: adSize)
             .frame(width: adSize.size.width, height: adSize.size.height)
             .frame(maxWidth: .infinity)
-            .background(Theme.backgroundBottom)
+            .background(Theme.backgroundBase)
     }
 }
 
@@ -135,14 +135,19 @@ extension View {
     /// Adds top + bottom anchored banners. Pass `adsSuppressed` from
     /// `AdGate.adsSuppressed(store:)` — banners show whenever it is false.
     /// When true (verified purchaser), no banners are attached at all.
+    ///
+    /// The banners are laid out above and below the content (not as safe-area insets), so
+    /// navigation stacks inside the content always start below the top banner.
     @ViewBuilder
     func bannerAds(adsSuppressed: Bool) -> some View {
         if adsSuppressed {
             self
         } else {
-            self
-                .safeAreaInset(edge: .top, spacing: 0) { BannerStrip() }
-                .safeAreaInset(edge: .bottom, spacing: 0) { BannerStrip() }
+            VStack(spacing: 0) {
+                BannerStrip()
+                self.frame(maxHeight: .infinity)
+                BannerStrip()
+            }
         }
     }
 }

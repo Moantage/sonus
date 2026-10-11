@@ -9,28 +9,27 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            Theme.background
+            Theme.glowBackground
 
             VStack(spacing: 0) {
                 Spacer()
 
                 // Brand
-                VStack(spacing: 16) {
-                    BrandLogoTile(size: 92)
+                VStack(spacing: 22) {
+                    BrandLogoTile(size: 76)
 
-                    Text("Sonus")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(Theme.textPrimary)
-
-                    Text("An audio sanctuary")
-                        .font(.system(size: 15))
-                        .foregroundColor(Theme.textSubtle)
+                    Text("Your music.\nWherever you keep it.")
+                        .font(.system(.title, weight: .bold))
+                        .foregroundStyle(Theme.textPrimary)
+                        .multilineTextAlignment(.center)
+                        .accessibilityAddTraits(.isHeader)
                 }
+                .padding(.horizontal, 24)
 
                 Spacer()
 
                 // Sign-in options
-                VStack(spacing: 12) {
+                VStack(spacing: 10) {
                     SignInWithAppleButton(
                         onRequest: { request in
                             request.requestedScopes = [.fullName, .email]
@@ -38,45 +37,18 @@ struct LoginView: View {
                         },
                         onCompletion: handleAppleSignIn
                     )
-                    .signInWithAppleButtonStyle(.black)
+                    .signInWithAppleButtonStyle(.white)
                     .frame(height: 52)
-                    .cornerRadius(14)
+                    .clipShape(Capsule())
 
-                    Button {
+                    signInOption(icon: "g.circle.fill", title: "Continue with Google") {
                         Task { await authManager.signInWithGoogle() }
-                    } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: "g.circle.fill")
-                                .font(.system(size: 19))
-                            Text("Continue with Google")
-                                .font(.system(size: 16, weight: .semibold))
-                        }
-                        .foregroundColor(Theme.textPrimary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 52)
-                        .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(Theme.hairline, lineWidth: 1)
-                        )
                     }
-
-                    HStack {
-                        Rectangle().fill(Theme.hairline).frame(height: 1)
-                        Text("or")
-                            .font(.system(size: 13))
-                            .foregroundColor(Theme.textSubtle)
-                        Rectangle().fill(Theme.hairline).frame(height: 1)
+                    signInOption(icon: "envelope.fill", title: "Continue with email") {
+                        showEmailSheet = true
                     }
-                    .padding(.vertical, 6)
-
-                    HStack(spacing: 12) {
-                        secondaryOption(icon: "envelope", title: "Email") {
-                            showEmailSheet = true
-                        }
-                        secondaryOption(icon: "iphone", title: "Phone") {
-                            showPhoneSheet = true
-                        }
+                    signInOption(icon: "iphone", title: "Continue with phone number") {
+                        showPhoneSheet = true
                     }
                 }
                 .padding(.horizontal, 24)
@@ -87,29 +59,27 @@ struct LoginView: View {
                         .padding(.horizontal, 24)
                 }
 
-                Spacer()
-
                 // Legal
                 VStack(spacing: 4) {
                     Text("By continuing, you agree to our")
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.subtleText)
+                        .foregroundStyle(Theme.textSubtle)
                     HStack(spacing: 4) {
                         Link("Terms of Service", destination: ConsentConfig.termsURL)
-                        Text("·").foregroundColor(Theme.subtleText)
+                        Text("·").foregroundStyle(Theme.textSubtle)
                         Link("Privacy Policy", destination: ConsentConfig.privacyURL)
                     }
-                    .font(.system(size: 12, weight: .medium))
+                    .fontWeight(.semibold)
                 }
-                .padding(.bottom, 32)
+                .font(.caption)
+                .padding(.top, 24)
+                .padding(.bottom, 24)
             }
 
             if case .authenticating = authManager.authState {
-                Color.black.opacity(0.45).ignoresSafeArea()
+                Color.black.opacity(0.5).ignoresSafeArea()
                 ProgressView().scaleEffect(1.4).tint(Theme.accent)
             }
         }
-        .preferredColorScheme(.light)
         .sheet(isPresented: $showEmailSheet) {
             EmailAuthSheet().environmentObject(authManager)
         }
@@ -121,21 +91,20 @@ struct LoginView: View {
         }
     }
 
-    private func secondaryOption(icon: String, title: String, action: @escaping () -> Void) -> some View {
+    /// Outlined pill with a leading icon, like the other "Continue with …" options.
+    private func signInOption(icon: String, title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: icon).font(.system(size: 15))
-                Text(title).font(.system(size: 15, weight: .semibold))
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 19))
+                    .frame(width: 24)
+                Spacer()
+                Text(title)
+                Spacer()
+                Color.clear.frame(width: 24, height: 1)
             }
-            .foregroundColor(Theme.textPrimary)
-            .frame(maxWidth: .infinity)
-            .frame(height: 48)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Theme.hairline, lineWidth: 1)
-            )
         }
+        .buttonStyle(PillButtonStyle(kind: .outline))
     }
 
     private func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) {
@@ -180,11 +149,15 @@ struct EmailAuthSheet: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(spacing: 16) {
-                        Picker("", selection: $isSignUp) {
-                            Text("Sign In").tag(false)
-                            Text("Create Account").tag(true)
+                        HStack(spacing: 8) {
+                            FilterPill(title: "Sign in", isSelected: !isSignUp) {
+                                withAnimation(.snappy) { isSignUp = false }
+                            }
+                            FilterPill(title: "Create account", isSelected: isSignUp) {
+                                withAnimation(.snappy) { isSignUp = true }
+                            }
+                            Spacer(minLength: 0)
                         }
-                        .pickerStyle(.segmented)
                         .padding(.bottom, 8)
 
                         if isSignUp {
@@ -206,13 +179,13 @@ struct EmailAuthSheet: View {
                         if let errorMessage { InlineError(message: errorMessage) }
                         if let infoMessage {
                             Text(infoMessage)
-                                .font(.system(size: 13))
-                                .foregroundColor(.green.opacity(0.9))
+                                .font(.footnote)
+                                .foregroundStyle(Theme.success)
                                 .multilineTextAlignment(.center)
                         }
 
                         PrimaryButton(
-                            title: isSignUp ? "Create Account" : "Sign In",
+                            title: isSignUp ? "Create account" : "Sign in",
                             isLoading: isLoading,
                             isDisabled: !formIsValid
                         ) {
@@ -222,13 +195,16 @@ struct EmailAuthSheet: View {
 
                         if !isSignUp {
                             Button("Forgot password?") { sendReset() }
-                                .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(Theme.accent)
-                                .padding(.top, 4)
+                                .font(.system(.subheadline, weight: .semibold))
+                                .foregroundStyle(Theme.textPrimary)
+                                .frame(minHeight: 44)
 
-                            Text("You can also sign in with a one-time code sent to your phone — use the Phone option on the previous screen.")
-                                .font(.system(size: 12))
-                                .foregroundColor(Theme.subtleText)
+                            Text(
+                                "You can also sign in with a one-time code sent to your phone. "
+                                    + "Use the phone option on the previous screen."
+                            )
+                                .font(.caption)
+                                .foregroundStyle(Theme.textSubtle)
                                 .multilineTextAlignment(.center)
                                 .padding(.top, 8)
                         }
@@ -236,7 +212,7 @@ struct EmailAuthSheet: View {
                     .padding(24)
                 }
             }
-            .navigationTitle(isSignUp ? "Create Account" : "Sign In")
+            .navigationTitle(isSignUp ? "Create account" : "Sign in")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -244,7 +220,7 @@ struct EmailAuthSheet: View {
                 }
             }
         }
-        .preferredColorScheme(.light)
+        .presentationBackground(Theme.backgroundBase)
     }
 
     private var formIsValid: Bool {
@@ -328,14 +304,14 @@ struct PhoneAuthSheet: View {
                                     placeholder: "+1 555 123 4567",
                                     keyboard: .phonePad, contentType: .telephoneNumber)
 
-                        Text("Include your country code. We'll text you a one-time code — carrier rates may apply.")
-                            .font(.system(size: 12))
-                            .foregroundColor(Theme.subtleText)
+                        Text("Include your country code. We'll text you a one-time code; carrier rates may apply.")
+                            .font(.caption)
+                            .foregroundStyle(Theme.textSubtle)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
                         if let errorMessage { InlineError(message: errorMessage) }
 
-                        PrimaryButton(title: "Send Code",
+                        PrimaryButton(title: "Send code",
                                       isLoading: isLoading,
                                       isDisabled: normalizedPhone.count < 8) {
                             sendCode()
@@ -347,7 +323,7 @@ struct PhoneAuthSheet: View {
 
                         if let errorMessage { InlineError(message: errorMessage) }
 
-                        PrimaryButton(title: mode == .signIn ? "Verify & Sign In" : "Verify & Save",
+                        PrimaryButton(title: mode == .signIn ? "Verify and sign in" : "Verify and save",
                                       isLoading: isLoading,
                                       isDisabled: code.count < 6) {
                             verify()
@@ -357,15 +333,16 @@ struct PhoneAuthSheet: View {
                             code = ""
                             sendCode()
                         }
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(Theme.accent)
+                        .font(.system(.subheadline, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                        .frame(minHeight: 44)
                     }
 
                     Spacer()
                 }
                 .padding(24)
             }
-            .navigationTitle(mode == .signIn ? "Phone Sign In" : "Phone Number")
+            .navigationTitle(mode == .signIn ? "Sign in with phone" : "Phone number")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -373,7 +350,7 @@ struct PhoneAuthSheet: View {
                 }
             }
         }
-        .preferredColorScheme(.light)
+        .presentationBackground(Theme.backgroundBase)
     }
 
     private var normalizedPhone: String {

@@ -71,14 +71,6 @@ struct MP3PlayerApp: App {
     @StateObject private var downloadManager = DownloadManager()
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @State private var selectedTab = 0   // 0 = Music, 1 = Profile
-
-    /// AD GATING — verified purchase only. Ads are removed solely for users with
-    /// a real, Apple-verified StoreKit entitlement (active subscription or
-    /// lifetime). A manually-set Firestore `isPremium` flag does NOT remove ads.
-    private var adsSuppressed: Bool {
-        AdGate.adsSuppressed(store: store)
-    }
 
     /// FEATURE ACCESS — more lenient. StoreKit entitlement OR the Firestore flag
     /// (which lets you grant premium features via promo/support/console). This is
@@ -87,10 +79,23 @@ struct MP3PlayerApp: App {
         store.isPremium || authManager.currentUser?.isPremium == true
     }
 
+    #if DEBUG
+    /// UI review only: launching with `-SonusUIReview` opens the signed-in shell without a
+    /// Firebase sign-in, so screens can be checked in the Simulator with local test songs.
+    /// Compiled out of release builds.
+    private let isUIReview = ProcessInfo.processInfo.arguments.contains("-SonusUIReview")
+    #else
+    private let isUIReview = false
+    #endif
+
     var body: some Scene {
         WindowGroup {
             Group {
-                if !hasCompletedOnboarding {
+                if isUIReview {
+                    ContentView()
+                        .environmentObject(libraryStore)
+                        .environmentObject(audioPlayerManager)
+                } else if !hasCompletedOnboarding {
                     OnboardingView()
                 } else {
                     switch authManager.authState {
@@ -107,42 +112,17 @@ struct MP3PlayerApp: App {
                         if authManager.needsConsent {
                             ConsentView()
                         } else {
-                            TabView(selection: $selectedTab) {
-                                ContentView()
-                                    .bannerAds(adsSuppressed: adsSuppressed)
-                                    .tabItem { Label("Listen", systemImage: "music.note") }
-                                    .environmentObject(libraryStore)
-                                    .environmentObject(audioPlayerManager)
-                                    .tag(0)
-
-                                ProfileView()
-                                    .bannerAds(adsSuppressed: adsSuppressed)
-                                    .tabItem { Label("You", systemImage: "person.circle") }
-                                    .environmentObject(audioPlayerManager)
-                                    .environmentObject(libraryStore)
-                                    .tag(1)
-                                    .simultaneousGesture(
-                                        // Left-edge swipe to the right → back to the music list.
-                                        // Gated to edge-start + mostly-horizontal so it never
-                                        // interferes with vertical scrolling in Profile.
-                                        DragGesture(minimumDistance: 20, coordinateSpace: .global)
-                                            .onEnded { value in
-                                                if value.startLocation.x < 24,
-                                                   value.translation.width > 70,
-                                                   abs(value.translation.height) < 60 {
-                                                    withAnimation { selectedTab = 0 }
-                                                }
-                                            }
-                                    )
-                            }
-                            .task {
-                                // Cloud library sync is a premium FEATURE (not ad
-                                // gating), so the lenient check is fine here.
-                                guard premiumFeaturesUnlocked else { return }
-                                if let remote = await librarySync.pull() {
-                                    libraryStore.mergeRemoteSnapshot(remote)
+                            ContentView()
+                                .environmentObject(libraryStore)
+                                .environmentObject(audioPlayerManager)
+                                .task {
+                                    // Cloud library sync is a premium FEATURE (not ad
+                                    // gating), so the lenient check is fine here.
+                                    guard premiumFeaturesUnlocked else { return }
+                                    if let remote = await librarySync.pull() {
+                                        libraryStore.mergeRemoteSnapshot(remote)
+                                    }
                                 }
-                            }
                         }
                     }
                 }
@@ -151,8 +131,8 @@ struct MP3PlayerApp: App {
             .environmentObject(store)
             .environmentObject(librarySync)
             .environmentObject(downloadManager)
-            .tint(Theme.accent)            // amber accent for system controls & tab bar
-            .preferredColorScheme(.light)
+            .tint(Theme.accent)            // amber accent for system controls
+            .preferredColorScheme(.dark)   // Ember is dark only
             .onOpenURL { url in
                 _ = GIDSignIn.sharedInstance.handle(url)
             }
