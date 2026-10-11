@@ -1,0 +1,64 @@
+# ── Private, local-only project files ──────────────────────────────────────────
+# Agent context and contracts (append-only log, project instructions)
+CLAUDE.md
+CLAUDE.local.md
+context.md
+# graphify knowledge-graph output
+graphify-out/
+# Internal notes, design handoffs, legacy files kept out of the public repo
+_private/
+# Never commit recovery phrases or other personal documents
+*recovery*phrase*
+
+# ── Secrets and service configuration ─────────────────────────────────────────
+# Firebase client config: use GoogleService-Info.example.plist as the template
+GoogleService-Info.plist
+# Real AdMob / Google Sign-In IDs: use Secrets.example.xcconfig as the template
+Secrets.xcconfig
+# Firebase CLI project binding, service accounts, function env/secrets
+.firebaserc
+*service-account*.json
+*-firebase-adminsdk-*.json
+.runtimeconfig.json
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+# Generic secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.cer.private
+AuthKey_*.p8
+fastlane/report.xml
+
+# ── Xcode / Swift ─────────────────────────────────────────────────────────────
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+.build/
+.swiftpm/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# ── Node ──────────────────────────────────────────────────────────────────────
+node_modules/
+/spec/dist/
+npm-debug.log*
+
+# ── Editors / OS / local tools ────────────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+.gemini/
+.antigravitycli/
+*.swp
+
+# Local Claude Code tooling (preview servers etc.)
+.claude/
