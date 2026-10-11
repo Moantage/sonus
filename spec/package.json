@@ -1,0 +1,19 @@
+{
+  "name": "@sonus/spec",
+  "version": "1.0.0-draft",
+  "private": true,
+  "description": "Sonus Manifest JSON Schema and Sonus Server API (OpenAPI 3.1). Single source of truth for the app and the docs site.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "lint": "redocly lint openapi.yaml",
+    "validate": "node scripts/validate-examples.mjs",
+    "bundle": "redocly bundle openapi.yaml --output dist/openapi.yaml",
+    "check": "npm run lint && npm run validate && npm run bundle"
+  },
+  "devDependencies": {
+    "@redocly/cli": "^2.62.1",
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1"
+  }
+}

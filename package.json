@@ -1,0 +1,22 @@
+{
+  "name": "sonus",
+  "private": true,
+  "description": "Sonus — open-source music player for your own servers. Workspace root for the spec and docs site.",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "spec",
+    "docs"
+  ],
+  "scripts": {
+    "spec:check": "npm run check -w @sonus/spec",
+    "docs:build": "npm run build -w @sonus/docs",
+    "docs:start": "npm run start -w @sonus/docs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "overrides": {
+    "js-yaml@>=4.0.0 <4.3.2": "^4.3.2",
+    "yaml@>=1.0.0 <1.10.3": "^1.10.3"
+  }
+}

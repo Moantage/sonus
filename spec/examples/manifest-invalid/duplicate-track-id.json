@@ -1,0 +1,8 @@
+{
+  "sonus": "1.0",
+  "library": { "id": "my-music", "name": "My Music" },
+  "tracks": [
+    { "id": "t1", "title": "One", "url": "one.mp3" },
+    { "id": "t1", "title": "Also one", "url": "also-one.mp3" }
+  ]
+}

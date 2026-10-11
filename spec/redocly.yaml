@@ -1,0 +1,7 @@
+extends:
+  - recommended
+rules:
+  # Servers are user-hosted, so the default origin is a placeholder by design.
+  no-server-example.com: off
+  # Every operation must document its client errors; apps rely on them for clear messages.
+  operation-4xx-response: error

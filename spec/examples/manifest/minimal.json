@@ -1,0 +1,7 @@
+{
+  "sonus": "1.0",
+  "library": { "id": "my-music", "name": "My Music" },
+  "tracks": [
+    { "id": "t1", "title": "First Light", "url": "music/first-light.mp3" }
+  ]
+}

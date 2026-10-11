@@ -1,0 +1,505 @@
+openapi: 3.1.0
+info:
+  title: Sonus Server API
+  version: 1.0.0-draft
+  summary: Optional REST API for dynamic music servers that Sonus can stream from.
+  description: |
+    Most people don't need this API. A static [Sonus Manifest](/spec/manifest) is enough to put a
+    library in a bucket, a GitHub repository or on a NAS web server.
+
+    Implement this API when your server is **dynamic**: the library is too big for one manifest
+    file, you want server-side search, or you transcode on the fly.
+
+    **Rules every implementation follows**
+    - All paths sit under `/sonus/v1` on your server.
+    - Use HTTPS. Plain HTTP is only accepted for hosts on the user's local network.
+    - Errors use [RFC 9457 problem details](https://www.rfc-editor.org/rfc/rfc9457)
+      (`application/problem+json`).
+    - Lists use cursor pagination. Pass `nextCursor` back as `cursor` until it is `null`.
+    - Unknown fields must be ignored by clients, so servers can add fields in any 1.x release.
+    - Track, album, artist and playlist objects use the same shapes as the Sonus Manifest.
+
+    **Authentication**
+    Send `Authorization: Bearer <token>` on every request. The stream and artwork endpoints also
+    accept `?token=<token>`, because iOS media players can't always attach headers. Tokens are
+    issued by your server however you like (an admin UI, a CLI, etc.). Sonus keeps them only in
+    the iOS Keychain and never sends them anywhere except your server.
+  license:
+    name: Apache 2.0
+    identifier: Apache-2.0
+  contact:
+    name: Sonus on GitHub
+    url: https://github.com/Moantage/sonus
+servers:
+  - url: "{origin}/sonus/v1"
+    description: Your server
+    variables:
+      origin:
+        default: https://music.local
+        description: Scheme, host and optional port of your server.
+security:
+  - bearerAuth: []
+tags:
+  - name: Server
+    description: Discover what a server supports.
+  - name: Library
+    description: Browse tracks, albums, artists and playlists.
+  - name: Search
+    description: Server-side search across the library.
+  - name: Media
+    description: Stream audio and fetch artwork.
+paths:
+  /info:
+    get:
+      operationId: getServerInfo
+      tags: [Server]
+      summary: Get server info and capabilities
+      description: The only endpoint that never needs authentication. Apps call it first to check the spec version and which optional features exist.
+      security: []
+      responses:
+        "200":
+          description: Server information.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServerInfo"
+              example:
+                name: Living-room NAS
+                specVersion: "1.0"
+                server: { name: sonus-reference-server, version: 0.1.0 }
+                authRequired: true
+                capabilities: [search, transcoding, artwork, playlists, manifest]
+        "404":
+          description: No Sonus API is served at this URL. Apps use this to tell the user they typed the wrong address.
+  /manifest:
+    get:
+      operationId: getManifest
+      tags: [Library]
+      summary: Get the whole library as a Sonus Manifest
+      description: Lets a dynamic server also act as a static source. Optional; only available when `capabilities` contains `manifest`.
+      responses:
+        "200":
+          description: The full library.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Manifest"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /tracks:
+    get:
+      operationId: listTracks
+      tags: [Library]
+      summary: List tracks
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: updatedSince
+          in: query
+          description: Only return tracks added or changed after this time. Used for incremental sync.
+          schema: { type: string, format: date-time }
+      responses:
+        "200":
+          description: A page of tracks.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TrackPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /tracks/{trackId}:
+    get:
+      operationId: getTrack
+      tags: [Library]
+      summary: Get one track
+      parameters:
+        - $ref: "#/components/parameters/TrackId"
+      responses:
+        "200":
+          description: The track.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Track" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /tracks/{trackId}/stream:
+    get:
+      operationId: streamTrack
+      tags: [Media]
+      summary: Stream or download a track's audio
+      description: |
+        Returns the audio bytes. Servers MUST support `Range` requests (`206 Partial Content`) so
+        the app can seek while streaming and resume downloads. When `maxBitrate` or `format` asks
+        for something different from the original file and the server supports `transcoding`, it
+        may transcode; otherwise it returns the original.
+      security:
+        - bearerAuth: []
+        - tokenQuery: []
+      parameters:
+        - $ref: "#/components/parameters/TrackId"
+        - name: Range
+          in: header
+          description: Standard HTTP byte range, e.g. `bytes=0-1048575`.
+          schema: { type: string }
+        - name: maxBitrate
+          in: query
+          description: Highest bitrate the app wants, in kbit/s. `0` or absent means original quality.
+          schema: { type: integer, minimum: 0 }
+        - name: format
+          in: query
+          description: Preferred container/codec when transcoding.
+          schema: { type: string, enum: [original, mp3, aac, flac] }
+      responses:
+        "200":
+          description: The whole file.
+          headers:
+            Accept-Ranges: { $ref: "#/components/headers/AcceptRanges" }
+          content:
+            audio/*:
+              schema: { type: string, format: binary }
+        "206":
+          description: The requested byte range.
+          headers:
+            Accept-Ranges: { $ref: "#/components/headers/AcceptRanges" }
+            Content-Range:
+              description: The range returned, e.g. `bytes 0-1048575/8583680`.
+              schema: { type: string }
+          content:
+            audio/*:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "416":
+          description: The requested range can't be satisfied.
+  /albums:
+    get:
+      operationId: listAlbums
+      tags: [Library]
+      summary: List albums
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of albums.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AlbumPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /albums/{albumId}:
+    get:
+      operationId: getAlbum
+      tags: [Library]
+      summary: Get an album with its tracks
+      parameters:
+        - name: albumId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Id" }
+      responses:
+        "200":
+          description: The album and its tracks in disc/track order.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AlbumDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /artists:
+    get:
+      operationId: listArtists
+      tags: [Library]
+      summary: List artists
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of artists.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtistPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /artists/{artistId}:
+    get:
+      operationId: getArtist
+      tags: [Library]
+      summary: Get an artist with their albums
+      parameters:
+        - name: artistId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Id" }
+      responses:
+        "200":
+          description: The artist and their albums.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArtistDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /playlists:
+    get:
+      operationId: listPlaylists
+      tags: [Library]
+      summary: List playlists
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: A page of playlists.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlaylistPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /playlists/{playlistId}:
+    get:
+      operationId: getPlaylist
+      tags: [Library]
+      summary: Get a playlist with its tracks
+      parameters:
+        - name: playlistId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Id" }
+      responses:
+        "200":
+          description: The playlist and its tracks in play order.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlaylistDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /search:
+    get:
+      operationId: searchLibrary
+      tags: [Search]
+      summary: Search the library
+      description: Only available when `capabilities` contains `search`. Otherwise the app searches locally.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: What the user typed.
+          schema: { type: string, minLength: 1 }
+        - name: types
+          in: query
+          description: Which kinds of result to return. Defaults to all.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { type: string, enum: [tracks, albums, artists, playlists] }
+        - name: limit
+          in: query
+          description: Maximum results per type.
+          schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+      responses:
+        "200":
+          description: Matches, best first, grouped by type.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SearchResults" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /artwork/{artworkId}:
+    get:
+      operationId: getArtwork
+      tags: [Media]
+      summary: Get artwork
+      description: Only available when `capabilities` contains `artwork`. Manifests can instead point `artwork` at any image URL.
+      security:
+        - bearerAuth: []
+        - tokenQuery: []
+      parameters:
+        - name: artworkId
+          in: path
+          required: true
+          schema: { $ref: "#/components/schemas/Id" }
+        - name: size
+          in: query
+          description: Longest edge in pixels. The server returns the closest size it has.
+          schema: { type: integer, minimum: 32, maximum: 3000 }
+      responses:
+        "200":
+          description: The image.
+          content:
+            image/*:
+              schema: { type: string, format: binary }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Token issued by your server.
+    tokenQuery:
+      type: apiKey
+      in: query
+      name: token
+      description: The same token as a query parameter. Only accepted by the stream and artwork endpoints.
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      description: Opaque cursor from the previous page's `nextCursor`. Omit for the first page.
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      description: Page size.
+      schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+    TrackId:
+      name: trackId
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/Id" }
+  headers:
+    AcceptRanges:
+      description: Always `bytes`.
+      schema: { type: string, const: bytes }
+  responses:
+    BadRequest:
+      description: The request is invalid, e.g. an expired cursor or a malformed parameter.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    Unauthorized:
+      description: Missing or invalid token.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotFound:
+      description: Nothing exists at this path.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+  schemas:
+    Id:
+      $ref: "./schemas/manifest.schema.json#/$defs/Id"
+    Manifest:
+      $ref: "./schemas/manifest.schema.json"
+    Track:
+      $ref: "./schemas/manifest.schema.json#/$defs/Track"
+    Album:
+      $ref: "./schemas/manifest.schema.json#/$defs/Album"
+    Artist:
+      $ref: "./schemas/manifest.schema.json#/$defs/Artist"
+    Playlist:
+      $ref: "./schemas/manifest.schema.json#/$defs/Playlist"
+    ServerInfo:
+      type: object
+      required: [name, specVersion, authRequired, capabilities]
+      properties:
+        name:
+          type: string
+          description: Library name shown to the user.
+        specVersion:
+          type: string
+          pattern: "^1\\.[0-9]+$"
+          description: Version of this API the server implements.
+        server:
+          type: object
+          description: Optional implementation details, useful for bug reports.
+          properties:
+            name: { type: string }
+            version: { type: string }
+        authRequired:
+          type: boolean
+          description: Whether endpoints other than `/info` need a token.
+        capabilities:
+          type: array
+          description: Optional features this server supports. Apps hide features that aren't listed.
+          items:
+            type: string
+            enum: [search, transcoding, artwork, playlists, manifest]
+    TrackPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Track" }
+        nextCursor: { $ref: "#/components/schemas/NextCursor" }
+    AlbumPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Album" }
+        nextCursor: { $ref: "#/components/schemas/NextCursor" }
+    ArtistPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Artist" }
+        nextCursor: { $ref: "#/components/schemas/NextCursor" }
+    PlaylistPage:
+      type: object
+      required: [items, nextCursor]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Playlist" }
+        nextCursor: { $ref: "#/components/schemas/NextCursor" }
+    NextCursor:
+      type: [string, "null"]
+      description: Pass this as `cursor` to get the next page. `null` means this is the last page.
+    AlbumDetail:
+      type: object
+      required: [album, tracks]
+      properties:
+        album: { $ref: "#/components/schemas/Album" }
+        tracks:
+          type: array
+          items: { $ref: "#/components/schemas/Track" }
+    ArtistDetail:
+      type: object
+      required: [artist, albums]
+      properties:
+        artist: { $ref: "#/components/schemas/Artist" }
+        albums:
+          type: array
+          items: { $ref: "#/components/schemas/Album" }
+    PlaylistDetail:
+      type: object
+      required: [playlist, tracks]
+      properties:
+        playlist: { $ref: "#/components/schemas/Playlist" }
+        tracks:
+          type: array
+          items: { $ref: "#/components/schemas/Track" }
+    SearchResults:
+      type: object
+      properties:
+        tracks:
+          type: array
+          items: { $ref: "#/components/schemas/Track" }
+        albums:
+          type: array
+          items: { $ref: "#/components/schemas/Album" }
+        artists:
+          type: array
+          items: { $ref: "#/components/schemas/Artist" }
+        playlists:
+          type: array
+          items: { $ref: "#/components/schemas/Playlist" }
+    Problem:
+      type: object
+      description: RFC 9457 problem details.
+      required: [title, status]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          default: about:blank
+        title: { type: string }
+        status: { type: integer, minimum: 400, maximum: 599 }
+        detail: { type: string }
+        instance: { type: string, format: uri-reference }

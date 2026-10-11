@@ -1,0 +1,89 @@
+---
+title: Sonus Manifest
+description: The static JSON file that turns any web host into a Sonus library.
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import minimal from '@site/static/examples/v1/minimal.json';
+import full from '@site/static/examples/v1/full.json';
+
+# Sonus Manifest <small>v1.0-draft</small>
+
+A Sonus Manifest is one JSON file, usually called `sonus.json`, that lists the tracks, albums,
+artists and playlists in a library and says where each audio file lives. Host it next to your
+music on any static file host, then give Sonus its URL.
+
+- **JSON Schema:** [`/schemas/v1/manifest.schema.json`](pathname:///sonus/schemas/v1/manifest.schema.json)
+  (draft 2020-12). Add `"$schema"` to your file to get validation and autocompletion in editors.
+- **Media type:** serve it as `application/json`.
+
+## Smallest valid manifest
+
+<CodeBlock language="json" title="sonus.json">{JSON.stringify(minimal, null, 2)}</CodeBlock>
+
+## Full example
+
+<CodeBlock language="json" title="sonus.json">{JSON.stringify(full, null, 2)}</CodeBlock>
+
+## Top-level fields
+
+| Field | Required | Type | Notes |
+|---|---|---|---|
+| `sonus` | yes | string | Spec version, e.g. `"1.0"`. Apps accept any `1.x`. |
+| `library` | yes | object | `id` and `name` are required. `updatedAt` lets apps skip unchanged manifests. |
+| `tracks` | yes | array | Can be empty. |
+| `baseUrl` | no | absolute URL | Base for relative URLs. Defaults to the manifest's own URL. |
+| `albums`, `artists`, `playlists` | no | arrays | Optional groupings that reference tracks by ID. |
+
+## Track fields
+
+| Field | Required | Notes |
+|---|---|---|
+| `id` | yes | Stable ID. See [IDs](#ids). |
+| `title` | yes | |
+| `url` | yes | Absolute URL or path relative to `baseUrl`. The host should support HTTP range requests. |
+| `artist`, `album` | no | Display names. |
+| `artistId`, `albumId` | no | Must match an entry in `artists` / `albums`. |
+| `trackNumber`, `discNumber` | no | Integers starting at 1. |
+| `duration` | no | Seconds. Lets the app show times before the file loads. |
+| `mimeType` | no | `audio/mpeg`, `audio/mp4`, `audio/flac`, `audio/wav`… |
+| `size` | no | Bytes. Used for download progress and storage estimates. |
+| `bitrate` | no | Average kbit/s. |
+| `sha256` | no | Lowercase hex. Lets the app verify downloads and notice changed files. |
+| `artwork` | no | Image URL (absolute or relative). |
+| `genre`, `year`, `addedAt` | no | |
+
+## Rules the schema can't check
+
+Apps reject a manifest that breaks any of these, so check them when you generate one:
+
+1. **Unique IDs.** No two items in the same collection (`tracks`, `albums`, `artists`, `playlists`)
+   share an `id`.
+2. **References resolve.** Every `artistId`, `albumId` and playlist `trackIds` entry points at an
+   item that exists.
+3. **Supported version.** `sonus` must be a `1.x` version.
+4. **Secure URLs.** After resolving against `baseUrl`, every URL is `https://`, or `http://` to a
+   host on the local network (private IP ranges, `localhost` or `.local` names).
+
+## IDs
+
+IDs may contain letters, digits, `.`, `_`, `:` and `-`, up to 256 characters. Keep them stable: an
+ID that changes looks like a brand-new track to the app, which then loses its downloads and playlist
+positions. Good choices are a database key, a MusicBrainz ID or a hash of the original file path.
+
+## Relative URLs
+
+Relative URLs resolve the same way they do in a browser:
+
+| Manifest URL | `url` value | Resolves to |
+|---|---|---|
+| `https://music.example.com/library/sonus.json` | `albums/a/01.mp3` | `https://music.example.com/library/albums/a/01.mp3` |
+| `https://music.example.com/library/sonus.json` | `/other/01.mp3` | `https://music.example.com/other/01.mp3` |
+| any | `https://cdn.example.com/01.flac` | unchanged |
+
+Set `baseUrl` when the audio lives somewhere other than the manifest.
+
+## Forward compatibility
+
+Apps **must ignore** fields they don't recognise. New optional fields can appear in any 1.x
+release without breaking older apps. See [Versioning](/spec/versioning).

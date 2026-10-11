@@ -1,0 +1,102 @@
+# CI: runs on Linux only, for pull requests into main and for merge-queue batches.
+# Branch protection requires the `ci-ok` job, and merges only happen through the merge queue,
+# which re-runs this workflow on main + the queued PRs and merges only if it's green.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  merge_group:
+    types: [checks_requested]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  spec:
+    name: Spec lint and example validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run spec:check
+
+  docs:
+    name: Docs site build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Regenerates API pages from spec/ and fails on any broken link.
+      - run: npm run docs:build
+
+  swift-test:
+    name: Swift unit tests (Linux)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container: swift:6.3.3-noble
+    steps:
+      - uses: actions/checkout@v7
+      - run: swift test --package-path ios/SonusCore
+
+  swift-lint:
+    name: SwiftLint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      # Strict: any new warning fails. Pre-existing app findings live in the baseline.
+      - run: >-
+          docker run --rm -v "$PWD:/work" -w /work ghcr.io/realm/swiftlint:0.65.1
+          swiftlint lint --strict --baseline .swiftlint-baseline.json --reporter github-actions-logging
+
+  changelog:
+    name: Changelog entry
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require a CHANGELOG.md entry
+        if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'skip-changelog')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          if gh api "repos/$REPO/pulls/$PR/files" --paginate --jq '.[].filename' | grep -qx 'CHANGELOG.md'; then
+            echo "CHANGELOG.md has an entry for this change."
+          else
+            echo "::error file=CHANGELOG.md::Add a CHANGELOG.md entry (date, title, description) or ask a maintainer for the skip-changelog label."
+            exit 1
+          fi
+      - name: Merge queue
+        if: github.event_name == 'merge_group'
+        run: echo "Changelog was checked when the pull request was opened."
+
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [spec, docs, swift-test, swift-lint, changelog]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every required job passed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq 'map_values(.result)'
+          echo "$RESULTS" | jq -e 'to_entries | all(.value.result == "success")' > /dev/null
