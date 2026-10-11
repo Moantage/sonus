@@ -1,0 +1,66 @@
+{
+  "$schema": "https://moantage.github.io/sonus/schemas/v1/manifest.schema.json",
+  "sonus": "1.0",
+  "library": {
+    "id": "living-room-nas",
+    "name": "Living-room NAS",
+    "description": "Ripped CDs and Bandcamp purchases.",
+    "updatedAt": "2026-10-11T18:30:00Z"
+  },
+  "baseUrl": "https://music.example.com/library/",
+  "artists": [
+    { "id": "ar-aurora-lane", "name": "Aurora Lane", "artwork": "artists/aurora-lane.jpg" }
+  ],
+  "albums": [
+    {
+      "id": "al-night-drive",
+      "title": "Night Drive",
+      "artist": "Aurora Lane",
+      "artistId": "ar-aurora-lane",
+      "year": 2024,
+      "genre": "Synthwave",
+      "artwork": "albums/night-drive/cover.jpg"
+    }
+  ],
+  "tracks": [
+    {
+      "id": "tr-night-drive-01",
+      "title": "Neon Overpass",
+      "url": "albums/night-drive/01-neon-overpass.mp3",
+      "artist": "Aurora Lane",
+      "artistId": "ar-aurora-lane",
+      "album": "Night Drive",
+      "albumId": "al-night-drive",
+      "trackNumber": 1,
+      "discNumber": 1,
+      "duration": 214.6,
+      "mimeType": "audio/mpeg",
+      "size": 8583680,
+      "bitrate": 320,
+      "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+      "genre": "Synthwave",
+      "year": 2024,
+      "addedAt": "2026-09-30T09:12:00Z"
+    },
+    {
+      "id": "tr-night-drive-02",
+      "title": "Tail Lights",
+      "url": "https://cdn.example.com/night-drive/02-tail-lights.flac",
+      "artist": "Aurora Lane",
+      "artistId": "ar-aurora-lane",
+      "album": "Night Drive",
+      "albumId": "al-night-drive",
+      "trackNumber": 2,
+      "duration": 248,
+      "mimeType": "audio/flac"
+    }
+  ],
+  "playlists": [
+    {
+      "id": "pl-late-night",
+      "name": "Late Night",
+      "description": "Low lights, long roads.",
+      "trackIds": ["tr-night-drive-02", "tr-night-drive-01"]
+    }
+  ]
+}

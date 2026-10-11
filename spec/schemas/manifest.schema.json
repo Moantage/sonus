@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Sonus Manifest",
+  "description": "A static JSON file that describes a music library hosted anywhere that can serve files over HTTPS: an S3 or Google Cloud Storage bucket, a GitHub repository, a NAS web server or your own server. Clients MUST ignore properties they do not recognise, so newer 1.x manifests keep working in older apps.",
+  "type": "object",
+  "required": ["sonus", "library", "tracks"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri",
+      "description": "Optional. Points editors at this schema for autocompletion and validation."
+    },
+    "sonus": {
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$",
+      "description": "Spec version the manifest follows, as MAJOR.MINOR. Apps that support version 1 accept any 1.x manifest.",
+      "examples": ["1.0"]
+    },
+    "library": { "$ref": "#/$defs/Library" },
+    "baseUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Absolute URL that relative URLs in this manifest resolve against. Defaults to the URL the manifest was fetched from."
+    },
+    "artists": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Artist" }
+    },
+    "albums": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Album" }
+    },
+    "tracks": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Track" }
+    },
+    "playlists": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Playlist" }
+    }
+  },
+  "$defs": {
+    "Id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "description": "Stable identifier, unique within its collection. Keep it unchanged when files are renamed or the manifest is regenerated, or apps will treat the item as new and lose downloads and playlist membership."
+    },
+    "UrlReference": {
+      "type": "string",
+      "format": "uri-reference",
+      "minLength": 1,
+      "description": "Absolute `https://` URL, or a path relative to `baseUrl`. Plain `http://` is only accepted for hosts on the local network."
+    },
+    "Library": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "name": { "type": "string", "minLength": 1, "description": "Shown to the user, e.g. \"Living-room NAS\"." },
+        "description": { "type": "string" },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the library last changed. Apps use it to skip re-processing an unchanged manifest."
+        }
+      }
+    },
+    "Artist": {
+      "type": "object",
+      "required": ["id", "name"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "name": { "type": "string", "minLength": 1 },
+        "artwork": { "$ref": "#/$defs/UrlReference" }
+      }
+    },
+    "Album": {
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "title": { "type": "string", "minLength": 1 },
+        "artist": { "type": "string", "description": "Display name of the album artist." },
+        "artistId": { "$ref": "#/$defs/Id", "description": "References an entry in `artists`." },
+        "year": { "type": "integer", "minimum": 0, "maximum": 9999 },
+        "genre": { "type": "string" },
+        "artwork": { "$ref": "#/$defs/UrlReference" }
+      }
+    },
+    "Track": {
+      "type": "object",
+      "required": ["id", "title", "url"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "title": { "type": "string", "minLength": 1 },
+        "url": {
+          "$ref": "#/$defs/UrlReference",
+          "description": "Where the audio file lives. The server SHOULD support HTTP range requests so apps can seek while streaming."
+        },
+        "artist": { "type": "string", "description": "Display name of the track artist." },
+        "artistId": { "$ref": "#/$defs/Id", "description": "References an entry in `artists`." },
+        "album": { "type": "string", "description": "Display name of the album." },
+        "albumId": { "$ref": "#/$defs/Id", "description": "References an entry in `albums`." },
+        "trackNumber": { "type": "integer", "minimum": 1 },
+        "discNumber": { "type": "integer", "minimum": 1 },
+        "duration": { "type": "number", "minimum": 0, "description": "Length in seconds." },
+        "mimeType": {
+          "type": "string",
+          "pattern": "^audio/[A-Za-z0-9.+-]+$",
+          "description": "For example `audio/mpeg`, `audio/mp4`, `audio/flac` or `audio/wav`.",
+          "examples": ["audio/mpeg"]
+        },
+        "size": { "type": "integer", "minimum": 0, "description": "File size in bytes. Used for download progress and storage estimates." },
+        "bitrate": { "type": "integer", "minimum": 1, "description": "Average bitrate in kbit/s." },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "Lowercase hex SHA-256 of the file. Lets apps verify downloads and detect changed files."
+        },
+        "genre": { "type": "string" },
+        "year": { "type": "integer", "minimum": 0, "maximum": 9999 },
+        "artwork": { "$ref": "#/$defs/UrlReference" },
+        "addedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Playlist": {
+      "type": "object",
+      "required": ["id", "name", "trackIds"],
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "name": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "artwork": { "$ref": "#/$defs/UrlReference" },
+        "trackIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Id" },
+          "description": "Track IDs in play order. Every ID must exist in `tracks`."
+        }
+      }
+    }
+  }
+}

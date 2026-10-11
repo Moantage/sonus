@@ -1,0 +1,12 @@
+// Sonus build configuration — tracked and safe to publish.
+//
+// The values below are Google's public TEST identifiers, so a fresh clone builds and only
+// ever shows test ads. Real identifiers live in Secrets.xcconfig, which is gitignored:
+//   cp Secrets.example.xcconfig Secrets.xcconfig   # then fill in your own values
+// Anything set in Secrets.xcconfig overrides the defaults here.
+
+ADMOB_APP_ID = ca-app-pub-3940256099942544~1458002511
+ADMOB_BANNER_UNIT_ID = ca-app-pub-3940256099942544/2435281174
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.replace-me
+
+#include? "Secrets.xcconfig"
