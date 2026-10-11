@@ -7,30 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		001000010000000000000001 /* MP3PlayerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000001 /* MP3PlayerApp.swift */; };
-		001000010000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000002 /* ContentView.swift */; };
-		001000010000000000000003 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000003 /* Models.swift */; };
-		001000010000000000000004 /* LibraryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000004 /* LibraryStore.swift */; };
-		001000010000000000000005 /* AudioPlayerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000005 /* AudioPlayerManager.swift */; };
-		001000010000000000000006 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000006 /* Assets.xcassets */; };
-		001000010000000000000007 /* AuthenticationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000009 /* AuthenticationManager.swift */; };
-		001000010000000000000008 /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00100002000000000000000A /* KeychainManager.swift */; };
-		001000010000000000000009 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00100002000000000000000B /* LoginView.swift */; };
-		00100001000000000000000A /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00100002000000000000000C /* ProfileView.swift */; };
-		00100001000000000000000B /* UserModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00100002000000000000000D /* UserModels.swift */; };
-		00100001000000000000000C /* FirestoreService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00100002000000000000000E /* FirestoreService.swift */; };
-		00100001000000000000000D /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00100002000000000000000F /* OnboardingView.swift */; };
-		00100001000000000000000E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000010 /* Theme.swift */; };
-		00100001000000000000000F /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000011 /* GoogleService-Info.plist */; };
-		001000010000000000000010 /* AdBanners.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000012 /* AdBanners.swift */; };
-		001000010000000000000011 /* ConsentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000013 /* ConsentView.swift */; };
-		001000010000000000000012 /* StoreManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000014 /* StoreManager.swift */; };
-		001000010000000000000013 /* PaywallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000015 /* PaywallView.swift */; };
-		001000010000000000000014 /* AdvancedControlsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000017 /* AdvancedControlsSheet.swift */; };
-		001000010000000000000015 /* ProfileBanners.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000018 /* ProfileBanners.swift */; };
-		001000010000000000000016 /* LibrarySyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001000020000000000000019 /* LibrarySyncService.swift */; };
-		001000010000000000000017 /* DownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00100002000000000000001A /* DownloadManager.swift */; };
-		001000010000000000000018 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 00100002000000000000001B /* PrivacyInfo.xcprivacy */; };
 		423D7CA02FF69840004F51AE /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 423D7C9F2FF69840004F51AE /* GoogleSignIn */; };
 		423D7CA22FF69840004F51AE /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 423D7CA12FF69840004F51AE /* GoogleSignInSwift */; };
 		423D7CA52FF6AE01004F51AE /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 423D7CA42FF6AE01004F51AE /* FirebaseAuth */; };
@@ -41,35 +17,34 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		001000020000000000000001 /* MP3PlayerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MP3PlayerApp.swift; sourceTree = "<group>"; };
-		001000020000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		001000020000000000000003 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		001000020000000000000004 /* LibraryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryStore.swift; sourceTree = "<group>"; };
-		001000020000000000000005 /* AudioPlayerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerManager.swift; sourceTree = "<group>"; };
-		001000020000000000000006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		001000020000000000000007 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		001000020000000000000008 /* MP3 Player.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "MP3 Player.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		001000020000000000000009 /* AuthenticationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationManager.swift; sourceTree = "<group>"; };
-		00100002000000000000000A /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
-		00100002000000000000000B /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
-		00100002000000000000000C /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
-		00100002000000000000000D /* UserModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserModels.swift; sourceTree = "<group>"; };
-		00100002000000000000000E /* FirestoreService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreService.swift; sourceTree = "<group>"; };
-		00100002000000000000000F /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		001000020000000000000010 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		001000020000000000000011 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		001000020000000000000012 /* AdBanners.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdBanners.swift; sourceTree = "<group>"; };
-		001000020000000000000013 /* ConsentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsentView.swift; sourceTree = "<group>"; };
-		001000020000000000000014 /* StoreManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoreManager.swift; sourceTree = "<group>"; };
-		001000020000000000000015 /* PaywallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaywallView.swift; sourceTree = "<group>"; };
-		001000020000000000000016 /* MP3Player.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = MP3Player.storekit; sourceTree = "<group>"; };
-		001000020000000000000017 /* AdvancedControlsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdvancedControlsSheet.swift; sourceTree = "<group>"; };
-		001000020000000000000018 /* ProfileBanners.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileBanners.swift; sourceTree = "<group>"; };
-		001000020000000000000019 /* LibrarySyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibrarySyncService.swift; sourceTree = "<group>"; };
-		00100002000000000000001A /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
-		00100002000000000000001B /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		00100002000000000000001C /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0010000C0000000000000001 /* Exceptions for "MP3Player" folder in "MP3 Player" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Config.xcconfig,
+				"GoogleService-Info.example.plist",
+				Info.plist,
+				MP3Player.storekit,
+				Secrets.example.xcconfig,
+				Secrets.xcconfig,
+			);
+			target = 001000050000000000000001 /* MP3 Player */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		0010000B0000000000000001 /* MP3Player */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0010000C0000000000000001 /* Exceptions for "MP3Player" folder in "MP3 Player" target */,
+			);
+			path = MP3Player;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		001000030000000000000001 /* Frameworks */ = {
@@ -92,44 +67,10 @@
 		001000040000000000000001 = {
 			isa = PBXGroup;
 			children = (
-				001000040000000000000002 /* MP3Player */,
+				0010000B0000000000000001 /* MP3Player */,
 				423D7CA32FF6AE01004F51AE /* Frameworks */,
 				001000040000000000000003 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		001000040000000000000002 /* MP3Player */ = {
-			isa = PBXGroup;
-			children = (
-				001000020000000000000001 /* MP3PlayerApp.swift */,
-				001000020000000000000002 /* ContentView.swift */,
-				001000020000000000000003 /* Models.swift */,
-				001000020000000000000004 /* LibraryStore.swift */,
-				001000020000000000000005 /* AudioPlayerManager.swift */,
-				001000020000000000000009 /* AuthenticationManager.swift */,
-				00100002000000000000000A /* KeychainManager.swift */,
-				00100002000000000000000B /* LoginView.swift */,
-				00100002000000000000000C /* ProfileView.swift */,
-				00100002000000000000000D /* UserModels.swift */,
-				00100002000000000000000E /* FirestoreService.swift */,
-				00100002000000000000000F /* OnboardingView.swift */,
-				001000020000000000000010 /* Theme.swift */,
-				001000020000000000000012 /* AdBanners.swift */,
-				001000020000000000000013 /* ConsentView.swift */,
-				001000020000000000000014 /* StoreManager.swift */,
-				001000020000000000000015 /* PaywallView.swift */,
-				001000020000000000000017 /* AdvancedControlsSheet.swift */,
-				001000020000000000000018 /* ProfileBanners.swift */,
-				001000020000000000000019 /* LibrarySyncService.swift */,
-				00100002000000000000001A /* DownloadManager.swift */,
-				001000020000000000000016 /* MP3Player.storekit */,
-				001000020000000000000011 /* GoogleService-Info.plist */,
-				001000020000000000000006 /* Assets.xcassets */,
-				001000020000000000000007 /* Info.plist */,
-				00100002000000000000001B /* PrivacyInfo.xcprivacy */,
-				00100002000000000000001C /* Config.xcconfig */,
-			);
-			path = MP3Player;
 			sourceTree = "<group>";
 		};
 		001000040000000000000003 /* Products */ = {
@@ -161,6 +102,9 @@
 			buildRules = (
 			);
 			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				0010000B0000000000000001 /* MP3Player */,
 			);
 			name = "MP3 Player";
 			productName = "MP3 Player";
@@ -210,9 +154,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				001000010000000000000006 /* Assets.xcassets in Resources */,
-				00100001000000000000000F /* GoogleService-Info.plist in Resources */,
-				001000010000000000000018 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -223,27 +164,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				001000010000000000000005 /* AudioPlayerManager.swift in Sources */,
-				001000010000000000000002 /* ContentView.swift in Sources */,
-				001000010000000000000004 /* LibraryStore.swift in Sources */,
-				001000010000000000000001 /* MP3PlayerApp.swift in Sources */,
-				001000010000000000000003 /* Models.swift in Sources */,
-				001000010000000000000007 /* AuthenticationManager.swift in Sources */,
-				001000010000000000000008 /* KeychainManager.swift in Sources */,
-				001000010000000000000009 /* LoginView.swift in Sources */,
-				00100001000000000000000A /* ProfileView.swift in Sources */,
-				00100001000000000000000B /* UserModels.swift in Sources */,
-				00100001000000000000000C /* FirestoreService.swift in Sources */,
-				00100001000000000000000D /* OnboardingView.swift in Sources */,
-				00100001000000000000000E /* Theme.swift in Sources */,
-				001000010000000000000010 /* AdBanners.swift in Sources */,
-				001000010000000000000011 /* ConsentView.swift in Sources */,
-				001000010000000000000012 /* StoreManager.swift in Sources */,
-				001000010000000000000013 /* PaywallView.swift in Sources */,
-				001000010000000000000014 /* AdvancedControlsSheet.swift in Sources */,
-				001000010000000000000015 /* ProfileBanners.swift in Sources */,
-				001000010000000000000016 /* LibrarySyncService.swift in Sources */,
-				001000010000000000000017 /* DownloadManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -291,7 +211,8 @@
 		};
 		0010000A0000000000000003 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 00100002000000000000001C /* Config.xcconfig */;
+			baseConfigurationReferenceAnchor = 0010000B0000000000000001 /* MP3Player */;
+			baseConfigurationReferenceRelativePath = Config.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
@@ -317,7 +238,8 @@
 		};
 		0010000A0000000000000004 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 00100002000000000000001C /* Config.xcconfig */;
+			baseConfigurationReferenceAnchor = 0010000B0000000000000001 /* MP3Player */;
+			baseConfigurationReferenceRelativePath = Config.xcconfig;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;

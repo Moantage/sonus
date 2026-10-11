@@ -2,6 +2,13 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-10-11 — Xcode project uses a synced folder
+
+`ios/MP3Player/` is now an Xcode synchronized folder: files added to it join the app target
+automatically, without edits to `project.pbxproj`. Parallel branches and outside contributors no
+longer conflict on the project file. Config, template and StoreKit files are excluded from the
+app bundle, as before.
+
 ## 2026-10-11 — Sonus spec 1.0-draft, docs site and Linux CI/CD
 
 Restructures the project as a monorepo and publishes the first draft of the open Sonus spec.
