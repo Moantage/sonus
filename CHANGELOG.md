@@ -2,6 +2,13 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-10-12 — Fix Firestore in emulator mode
+
+In `-SonusFirebaseEmulator` mode, Firestore tried to reach the emulator over TLS and every read and
+write failed. As a result, sign-in worked, but the profile and consent never saved and the consent
+screen spun forever. Firebase 12's `useEmulator` only changes the host, so emulator mode now also
+turns TLS off explicitly.
+
 ## 2026-10-12 — Firebase emulator mode for testing sign-in
 
 - Debug builds launched with `-SonusFirebaseEmulator` use the Firebase Auth and Firestore emulators
