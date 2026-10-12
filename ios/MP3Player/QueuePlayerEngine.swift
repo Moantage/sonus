@@ -120,7 +120,8 @@ final class QueuePlayerEngine {
         seekGeneration += 1
         let generation = seekGeneration
         let tolerance = exact ? CMTime.zero : CMTime(seconds: 0.5, preferredTimescale: 600)
-        player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600), toleranceBefore: tolerance, toleranceAfter: tolerance) { [weak self] _ in
+        let target = CMTime(seconds: seconds, preferredTimescale: 600)
+        player.seek(to: target, toleranceBefore: tolerance, toleranceAfter: tolerance) { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self, generation == self.seekGeneration else { return }
                 self.isSeeking = false
