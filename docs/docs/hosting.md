@@ -34,13 +34,42 @@ Works with AWS S3, Cloudflare R2, Backblaze B2, Wasabi and MinIO.
 
 ## GitHub
 
-Good for small libraries and music you have the rights to share.
+Good for small libraries and music you have the rights to store there. Add a repository as
+`owner/repo`, optionally with a branch (`owner/repo@main`) and a folder inside it.
 
-- Commit the audio and `sonus.json`, then use the raw URL:
-  `https://raw.githubusercontent.com/<owner>/<repo>/<branch>/sonus.json`.
-- GitHub limits file sizes and bandwidth, and Git LFS has its own quotas. Large libraries belong in a
-  bucket or on a NAS.
-- Private repositories need a token. That's planned and will follow the same Keychain rules.
+- **No setup needed.** Sonus lists every playable audio file in the repository (MP3, M4A/AAC,
+  FLAC, WAV, AIFF and CAF) and uses its path as the track's ID. Titles come from file names until
+  Sonus has read each file's own tags.
+- **With a manifest.** Put a `sonus.json` at the root, or in the folder you picked, to set titles,
+  artists, albums and order. Relative track URLs resolve inside the repository.
+- **Git LFS works.** Sonus recognises LFS pointer files and streams the real audio from GitHub's
+  media host.
+- **Public repositories** need nothing else. You can also add a public manifest's raw URL,
+  `https://raw.githubusercontent.com/<owner>/<repo>/<branch>/sonus.json`, as a manifest source.
+
+### Private repositories
+
+Private repositories work with a **fine-grained personal access token** that can read only that
+repository:
+
+1. On GitHub, open **Settings → Developer settings → Personal access tokens → Fine-grained tokens**
+   and choose **Generate new token**.
+2. Under **Repository access**, choose **Only select repositories** and pick your music repository.
+3. Under **Repository permissions**, set **Contents** to **Read-only**. Leave everything else at
+   *No access*.
+4. Pick an expiry date. When the token expires, Sonus tells you; create a new one the same way.
+
+Sonus keeps the token in the iPhone Keychain and sends it only to `api.github.com`,
+`raw.githubusercontent.com` and `media.githubusercontent.com`. See
+[Privacy and security](/privacy).
+
+### Limits
+
+- GitHub caps files at 100 MB and limits bandwidth, and Git LFS has its own storage and bandwidth
+  quotas. Large libraries belong in a bucket or on a NAS.
+- GitHub's API allows 60 requests an hour without a token and 5,000 with one. If you hit the limit,
+  Sonus tells you when to try again.
+- GitHub's terms apply to private repositories too, so only store music you have the rights to.
 
 ## NAS or your own server
 

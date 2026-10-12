@@ -13,6 +13,32 @@ Every change merged into `main`, newest first. Each entry has a date, a title an
   `firebase/emulator-seed.local.json` (gitignored) or the example file.
 - Setup steps are in CONTRIBUTING.md.
 
+## 2026-10-12 — Streaming engine with manifest and GitHub sources
+
+Sonus can now stream and download music from the person's own sources, not just play imported
+files.
+- **Playback:** the player moves from `AVAudioPlayer` to `AVQueuePlayer`. Downloaded and imported
+  songs play from the device; everything else streams, and the next song preloads so it starts
+  without a gap. New buffering state, network errors in plain words, lock-screen info with artwork
+  read from the file's tags. Speed, sleep timer, ±15 s skips, repeat, interruptions and background
+  audio work as before.
+- **Sources:** Sonus Manifest (`sonus.json`) and GitHub repositories. A source refresh updates
+  songs in place by their stable IDs. GitHub repositories work with no setup: files are listed from
+  the Git tree, titles are cleaned up until tags are read, and Git LFS files stream from the media
+  host. A `sonus.json` in the repository is used when present. Private repositories work with a
+  fine-grained token that stays in the Keychain and goes only to GitHub's API, raw and media hosts.
+- **Authenticated streaming:** an `AVAssetResourceLoader` path makes ranged requests with the
+  source's token, so seeking works on private sources. Sonus Server and private buckets can use it
+  later.
+- **Downloads:** offline downloads are free and run on a background `URLSession`. They report
+  real progress, can be cancelled, resume where they stopped, and are checked against the source's
+  SHA-256 when it publishes one.
+- **Networking:** `NSAllowsLocalNetworking` and a local-network usage description, for servers on
+  the home network. `NSAllowsArbitraryLoads` stays off; remote hosts must use https.
+- **SonusCore:** source models, the merge planner, the stream-or-local decision, GitHub listing and
+  LFS parsing, rate-limit handling, the ranged HTTP client and the token host policy, with Swift
+  Testing tests against a local HTTP server.
+- **Docs:** GitHub hosting (private repositories, tokens, limits) and which hosts receive a token.
 ## 2026-10-12 — Spotify-style shell in Ember (dark)
 
 - Dark-only Ember theme (warm graphite, one amber accent, bold SF Pro, pill buttons and chips).
