@@ -41,11 +41,13 @@ enum FirebaseBootstrap {
         Auth.auth().useEmulator(withHost: host, port: authEmulatorPort)
 
         let firestore = Firestore.firestore()
-        // Emulator data is wiped and reseeded freely, so don't keep an on-disk cache of it.
+        firestore.useEmulator(withHost: host, port: firestoreEmulatorPort)
         let settings = firestore.settings
+        // useEmulator only changes the host; the emulator speaks plain gRPC, so TLS must be off too.
+        settings.isSSLEnabled = false
+        // Emulator data is wiped and reseeded freely, so don't keep an on-disk cache of it.
         settings.cacheSettings = MemoryCacheSettings()
         firestore.settings = settings
-        firestore.useEmulator(withHost: host, port: firestoreEmulatorPort)
     }
     #endif
 }
