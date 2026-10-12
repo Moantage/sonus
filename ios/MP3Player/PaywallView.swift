@@ -1,9 +1,11 @@
 import SwiftUI
 import StoreKit
 
-/// Premium upgrade paywall: a Standard vs Premium comparison plus the two
-/// purchase options (€3/month subscription or €11 lifetime). Styled to match
-/// the app's dark theme.
+/// Premium upgrade paywall: what's free with an account vs. what Premium adds, plus the two
+/// purchase options (€3/month subscription or €11 lifetime).
+///
+/// Free with an account: your sources, streaming and offline downloads. Premium: profile
+/// banners, sync across devices, and ad-free listening while ads exist.
 struct PaywallView: View {
     @EnvironmentObject private var store: StoreManager
     @Environment(\.dismiss) private var dismiss
@@ -11,27 +13,28 @@ struct PaywallView: View {
     @State private var purchasing = false
     @State private var errorMessage: String?
 
-    // Feature comparison rows. `standard` nil = not included (shown as —/✗).
-    private struct Feature {
+    private struct Feature: Identifiable {
         let name: String
-        let standard: String?
-        let premium: String
+        let icon: String
+        let isFree: Bool
+
+        var id: String { name }
     }
 
     private let features: [Feature] = [
-        Feature(name: "Ad-free listening",        standard: nil,          premium: "Included"),
-        Feature(name: "Audio quality",            standard: "Standard",   premium: "High quality"),
-        Feature(name: "Advanced audio controls",  standard: nil,          premium: "Included"),
-        Feature(name: "Premium profile banners",  standard: nil,          premium: "Included"),
-        Feature(name: "Cloud library sync",       standard: nil,          premium: "Any device"),
-        Feature(name: "Offline downloads",        standard: nil,          premium: "Any device")
+        Feature(name: "Your music sources", icon: "externaldrive.connected.to.line.below", isFree: true),
+        Feature(name: "Streaming", icon: "dot.radiowaves.left.and.right", isFree: true),
+        Feature(name: "Offline downloads", icon: "arrow.down.circle", isFree: true),
+        Feature(name: "Profile banners", icon: "photo", isFree: false),
+        Feature(name: "Sync across devices", icon: "arrow.triangle.2.circlepath", isFree: false),
+        Feature(name: "Ad-free listening", icon: "speaker.slash", isFree: false)
     ]
 
     var body: some View {
-        ZStack {
-            Theme.background
+        ZStack(alignment: .topTrailing) {
+            Theme.glowBackground
 
-            ScrollView(showsIndicators: false) {
+            ScrollView {
                 VStack(spacing: 24) {
                     header
                     comparisonCard
@@ -47,10 +50,11 @@ struct PaywallView: View {
                 .padding(20)
                 .padding(.top, 8)
             }
+            .scrollIndicators(.hidden)
 
             closeButton
         }
-        .preferredColorScheme(.light)
+        .presentationBackground(Theme.backgroundBase)
         .onChange(of: store.isPremium) { _, isPremium in
             if isPremium { dismiss() }   // unlocked — close the paywall
         }
@@ -60,23 +64,22 @@ struct PaywallView: View {
 
     private var header: some View {
         VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Theme.artworkGradient)
-                    .frame(width: 72, height: 72)
-                    .shadow(color: Theme.accent.opacity(0.4), radius: 18)
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 30))
-                    .foregroundColor(Theme.accentInk)
-            }
+            Image(systemName: "crown.fill")
+                .font(.system(size: 30))
+                .foregroundStyle(Theme.accentInk)
+                .frame(width: 72, height: 72)
+                .background(Theme.playGradient, in: Circle())
+                .shadow(color: Theme.accent.opacity(0.4), radius: 18)
+                .accessibilityHidden(true)
 
             Text("Go Premium")
-                .font(.system(size: 28, weight: .bold))
-                .foregroundColor(Theme.textPrimary)
+                .font(.system(.largeTitle, weight: .bold))
+                .foregroundStyle(Theme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
 
-            Text("Unlock the best of Sonus — no ads, higher quality, and your library everywhere.")
-                .font(.system(size: 15))
-                .foregroundColor(Theme.textSubtle)
+            Text("Make Sonus yours: profile banners, your library on every device, and no ads.")
+                .font(.body)
+                .foregroundStyle(Theme.textSubtle)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 8)
         }
@@ -87,170 +90,170 @@ struct PaywallView: View {
 
     private var comparisonCard: some View {
         VStack(spacing: 0) {
-            // Column headers
             HStack(spacing: 0) {
-                Text("Features")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Theme.subtleText)
+                Text("Your account")
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(Theme.textSubtle)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                Text("Standard")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Theme.textSubtle)
-                    .frame(width: 78)
+                Text("Free")
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(Theme.textSubtle)
+                    .frame(width: 64)
 
                 Text("Premium")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(Theme.accentInk)
-                    .frame(width: 92)
+                    .font(.system(.footnote, weight: .bold))
+                    .foregroundStyle(Theme.accentInk)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .frame(width: 84)
                     .padding(.vertical, 6)
-                    .background(Theme.accent)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .background(Theme.accent, in: Capsule())
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
+            .accessibilityHidden(true)
 
-            ForEach(Array(features.enumerated()), id: \.offset) { index, feature in
-                Divider().background(Theme.hairline)
+            ForEach(features) { feature in
+                Rectangle().fill(Theme.hairline).frame(height: 1)
                 row(feature)
-                    .background(index.isMultiple(of: 2) ? Theme.ink.opacity(0.03) : .clear)
             }
         }
-        .emberCard(cornerRadius: 16)
+        .emberCard(cornerRadius: Theme.Radius.tile)
     }
 
     private func row(_ feature: Feature) -> some View {
         HStack(spacing: 0) {
-            Text(feature.name)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Theme.textPrimary)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            Label {
+                Text(feature.name)
+                    .font(.system(.subheadline, weight: .medium))
+                    .foregroundStyle(Theme.textPrimary)
+            } icon: {
+                Image(systemName: feature.icon)
+                    .foregroundStyle(Theme.textSubtle)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Standard column
             Group {
-                if let value = feature.standard {
-                    Text(value)
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.subtleText)
+                if feature.isFree {
+                    Image(systemName: "checkmark")
+                        .font(.system(.footnote, weight: .bold))
+                        .foregroundStyle(Theme.textPrimary)
                 } else {
                     Image(systemName: "minus")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Theme.subtleText.opacity(0.5))
+                        .font(.system(.footnote, weight: .bold))
+                        .foregroundStyle(Theme.textMuted)
                 }
             }
-            .frame(width: 78)
+            .frame(width: 64)
 
-            // Premium column
-            HStack(spacing: 4) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 13))
-                    .foregroundColor(Theme.accent)
-                Text(feature.premium)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(Theme.textPrimary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-            }
-            .frame(width: 92)
+            Image(systemName: "checkmark.circle.fill")
+                .font(.body)
+                .foregroundStyle(Theme.accent)
+                .frame(width: 84)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(feature.name)
+        .accessibilityValue(feature.isFree ? "Free with your account" : "Premium")
     }
 
     // MARK: - Purchase buttons
 
     private var purchaseButtons: some View {
         VStack(spacing: 12) {
-            // Lifetime — highlighted as best value
             planButton(
-                title: "Lifetime",
-                subtitle: "One-time payment · yours forever",
-                price: store.lifetime?.displayPrice ?? "€11",
-                cadence: nil,
-                highlighted: true,
-                badge: "Best value"
+                PlanStyle(
+                    title: "Lifetime",
+                    subtitle: "One-time payment · yours forever",
+                    price: store.lifetime?.displayPrice ?? "€11",
+                    cadence: nil,
+                    badge: "Best value"
+                )
             ) {
                 if let product = store.lifetime { buy(product) }
             }
 
-            // Monthly subscription
             planButton(
-                title: "Monthly",
-                subtitle: "Auto-renews · cancel anytime",
-                price: store.monthly?.displayPrice ?? "€3",
-                cadence: "/mo",
-                highlighted: false,
-                badge: nil
+                PlanStyle(
+                    title: "Monthly",
+                    subtitle: "Auto-renews · cancel anytime",
+                    price: store.monthly?.displayPrice ?? "€3",
+                    cadence: "/mo",
+                    badge: nil
+                )
             ) {
                 if let product = store.monthly { buy(product) }
             }
 
-            Button("Restore Purchases") {
+            Button("Restore purchases") {
                 Task { await store.restore() }
             }
-            .font(.system(size: 14, weight: .medium))
-            .foregroundColor(Theme.accent)
-            .padding(.top, 4)
+            .font(.system(.subheadline, weight: .semibold))
+            .foregroundStyle(Theme.textPrimary)
+            .frame(minHeight: 44)
             .disabled(purchasing)
         }
     }
 
-    private func planButton(
-        title: String,
-        subtitle: String,
-        price: String,
-        cadence: String?,
-        highlighted: Bool,
-        badge: String?,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
+    private struct PlanStyle {
+        let title: String
+        let subtitle: String
+        let price: String
+        let cadence: String?
+        /// Highlighted plans carry a badge ("Best value").
+        let badge: String?
+    }
+
+    private func planButton(_ plan: PlanStyle, action: @escaping () -> Void) -> some View {
+        let highlighted = plan.badge != nil
+        return Button(action: action) {
             HStack(spacing: 14) {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 8) {
-                        Text(title)
-                            .font(.system(size: 17, weight: .bold))
-                            .foregroundColor(Theme.textPrimary)
-                        if let badge {
-                            Text(badge.uppercased())
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundColor(Theme.accentInk)
-                                .padding(.horizontal, 7)
+                        Text(plan.title)
+                            .font(.system(.headline, weight: .bold))
+                            .foregroundStyle(Theme.textPrimary)
+                        if let badge = plan.badge {
+                            Text(badge)
+                                .font(.system(.caption2, weight: .bold))
+                                .foregroundStyle(Theme.accentInk)
+                                .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
-                                .background(Capsule().fill(Theme.accent))
+                                .background(Theme.accent, in: Capsule())
                         }
                     }
-                    Text(subtitle)
-                        .font(.system(size: 12))
-                        .foregroundColor(Theme.textSubtle)
+                    Text(plan.subtitle)
+                        .font(.caption)
+                        .foregroundStyle(Theme.textSubtle)
                 }
+                .multilineTextAlignment(.leading)
 
                 Spacer()
 
                 HStack(alignment: .firstTextBaseline, spacing: 1) {
-                    Text(price)
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(Theme.textPrimary)
-                    if let cadence {
+                    Text(plan.price)
+                        .font(.system(.title3, weight: .bold))
+                        .foregroundStyle(Theme.textPrimary)
+                    if let cadence = plan.cadence {
                         Text(cadence)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(Theme.textSubtle)
+                            .font(.footnote)
+                            .foregroundStyle(Theme.textSubtle)
                     }
                 }
             }
             .padding(18)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(highlighted
-                          ? AnyShapeStyle(Theme.accent.opacity(0.14))
-                          : AnyShapeStyle(Theme.surface))
+                highlighted ? Theme.accent.opacity(0.14) : Theme.surface,
+                in: RoundedRectangle(cornerRadius: Theme.Radius.tile, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(highlighted ? Theme.accent.opacity(0.6) : Theme.hairline,
-                            lineWidth: highlighted ? 1.5 : 1)
+                RoundedRectangle(cornerRadius: Theme.Radius.tile, style: .continuous)
+                    .stroke(highlighted ? Theme.accent.opacity(0.7) : Theme.hairline, lineWidth: highlighted ? 1.5 : 1)
             )
         }
+        .buttonStyle(PressableButtonStyle(scale: 0.98))
         .disabled(purchasing)
         .opacity(purchasing ? 0.6 : 1)
     }
@@ -263,40 +266,40 @@ struct PaywallView: View {
                 ProgressView().tint(Theme.accent)
             }
 
-            Text("The Monthly plan is an auto-renewable subscription. Payment is charged to your Apple ID, and it renews automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel anytime in your App Store account settings. Lifetime is a one-time purchase.")
-                .font(.system(size: 11))
-                .foregroundColor(Theme.subtleText.opacity(0.8))
-                .multilineTextAlignment(.center)
+            Text(
+                "The Monthly plan is an auto-renewable subscription. Payment is charged to your Apple ID, and it renews "
+                    + "automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel "
+                    + "anytime in your App Store account settings. Lifetime is a one-time purchase."
+            )
+            .font(.caption2)
+            .foregroundStyle(Theme.textMuted)
+            .multilineTextAlignment(.center)
 
             HStack(spacing: 6) {
                 Link("Terms", destination: ConsentConfig.termsURL)
-                Text("·").foregroundColor(Theme.subtleText)
+                Text("·").foregroundStyle(Theme.textSubtle)
                 Link("Privacy", destination: ConsentConfig.privacyURL)
             }
-            .font(.system(size: 12, weight: .medium))
+            .font(.system(.caption, weight: .semibold))
         }
         .padding(.top, 4)
         .padding(.bottom, 24)
     }
 
     private var closeButton: some View {
-        VStack {
-            HStack {
-                Spacer()
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(Theme.textPrimary)
-                        .padding(10)
-                        .background(Circle().fill(Theme.surfaceRaised))
-                        .overlay(Circle().stroke(Theme.hairline, lineWidth: 1))
-                }
-            }
-            Spacer()
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 15, weight: .bold))
+                .foregroundStyle(Theme.textPrimary)
+                .frame(width: 36, height: 36)
+                .background(Theme.surfaceRaised, in: Circle())
+                .frame(width: 44, height: 44)
         }
-        .padding(16)
+        .buttonStyle(.pressable)
+        .accessibilityLabel("Close")
+        .padding(12)
     }
 
     // MARK: - Actions

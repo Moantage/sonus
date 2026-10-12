@@ -13,7 +13,7 @@ struct ProfileBanner: Identifiable, Hashable {
 
     static let classic = ProfileBanner(
         id: "classic", name: "Classic", isPremiumInit: false,
-        colors: [Color(hex: 0x2B2113), Color(hex: 0x14110E)])
+        colors: [Color(hex: 0x6B4A22), Color(hex: 0x231D14)])
 
     static let aurora = ProfileBanner(
         id: "aurora", name: "Aurora", isPremiumInit: true,
@@ -62,19 +62,25 @@ struct BannerPickerSheet: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                Theme.background
-
-                ScrollView(showsIndicators: false) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
                     LazyVGrid(columns: columns, spacing: 12) {
                         ForEach(ProfileBanner.all) { banner in
                             bannerCell(banner)
                         }
                     }
-                    .padding(20)
+
+                    if !isPremium {
+                        Label("Classic is free. The others come with Sonus Premium.", systemImage: "crown.fill")
+                            .font(.footnote)
+                            .foregroundStyle(Theme.textSubtle)
+                    }
                 }
+                .padding(20)
             }
-            .navigationTitle("Profile Banner")
+            .scrollIndicators(.hidden)
+            .background(Theme.backgroundElevated)
+            .navigationTitle("Profile banner")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -82,7 +88,8 @@ struct BannerPickerSheet: View {
                 }
             }
         }
-        .preferredColorScheme(.light)
+        .presentationBackground(Theme.backgroundElevated)
+        .presentationCornerRadius(20)
     }
 
     private func bannerCell(_ banner: ProfileBanner) -> some View {
@@ -97,34 +104,38 @@ struct BannerPickerSheet: View {
             }
         } label: {
             ZStack(alignment: .bottomLeading) {
-                RoundedRectangle(cornerRadius: 14)
+                RoundedRectangle(cornerRadius: Theme.Radius.tile, style: .continuous)
                     .fill(banner.gradient)
-                    .frame(height: 84)
+                    .frame(height: 88)
 
                 if locked {
                     Image(systemName: "lock.fill")
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white.opacity(0.9))
+                        .foregroundStyle(.white.opacity(0.9))
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
 
                 HStack {
                     Text(banner.name)
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(.white)
+                        .font(.system(.footnote, weight: .bold))
+                        .foregroundStyle(.white)
                     Spacer()
                     if selected {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(Theme.accent)
+                            .foregroundStyle(Theme.accent)
                     }
                 }
                 .padding(10)
             }
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(selected ? Theme.accent : Theme.hairline,
-                            lineWidth: selected ? 2 : 1)
+                RoundedRectangle(cornerRadius: Theme.Radius.tile, style: .continuous)
+                    .stroke(selected ? Theme.accent : .clear, lineWidth: 2)
             )
         }
+        .buttonStyle(PressableButtonStyle(scale: 0.96))
+        .sensoryFeedback(.selection, trigger: selected)
+        .accessibilityLabel(banner.name)
+        .accessibilityValue(selected ? "Selected" : (locked ? "Premium" : ""))
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
 }
