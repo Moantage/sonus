@@ -48,13 +48,7 @@ public enum HTTPClientError: Error, Equatable, Sendable, CustomStringConvertible
         if let error = error as? HTTPClientError {
             return error
         }
-        #if canImport(Darwin)
         let nsError = error as NSError
-        #else
-        guard let nsError = error as? NSError else {
-            return .transport(code: 0, message: String(describing: error))
-        }
-        #endif
         if nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled {
             return .cancelled
         }
