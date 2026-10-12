@@ -2,6 +2,17 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-10-12 — Firebase emulator mode for testing sign-in
+
+- Debug builds launched with `-SonusFirebaseEmulator` use the Firebase Auth and Firestore emulators
+  on the offline `demo-sonus` project instead of the real Firebase project. They need no
+  `GoogleService-Info.plist`, and test accounts stay out of the production user database. Release
+  builds are unchanged.
+- `npm run emulators` starts the emulators, keeping their data in `firebase/emulator-data/`
+  (gitignored). `npm run emulators:seed` creates test accounts from
+  `firebase/emulator-seed.local.json` (gitignored) or the example file.
+- Setup steps are in CONTRIBUTING.md.
+
 ## 2026-10-12 — Streaming engine with manifest and GitHub sources
 
 Sonus can now stream and download music from the person's own sources, not just play imported

@@ -38,3 +38,18 @@ swiftlint lint
 To build the app, open `ios/MP3Player.xcodeproj` in Xcode. Copy
 `ios/MP3Player/GoogleService-Info.example.plist` to `GoogleService-Info.plist` with your own Firebase
 project's values. AdMob uses Google's test IDs unless you add a `Secrets.xcconfig`.
+
+### Testing sign-in without a Firebase project
+
+Debug builds can use the Firebase Local Emulator Suite instead of a real project. You need the
+Firebase CLI (`npm install -g firebase-tools`) and Java 11+, but no `GoogleService-Info.plist`.
+
+```bash
+npm run emulators         # Auth + Firestore emulators on the offline demo-sonus project
+npm run emulators:seed    # test accounts from firebase/emulator-seed.local.json or the example
+```
+
+Then launch the app with the `-SonusFirebaseEmulator` argument and sign in with "Continue with
+email". The example account is `tester@sonus.test` / `sonus-emulator-only`. The Emulator UI at
+http://127.0.0.1:4000 shows the accounts and Firestore data. The flag is compiled out of release
+builds.

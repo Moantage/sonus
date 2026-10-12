@@ -10,7 +10,9 @@
   "scripts": {
     "spec:check": "npm run check -w @sonus/spec",
     "docs:build": "npm run build -w @sonus/docs",
-    "docs:start": "npm run start -w @sonus/docs"
+    "docs:start": "npm run start -w @sonus/docs",
+    "emulators": "node firebase/scripts/emulators.mjs",
+    "emulators:seed": "node firebase/scripts/seed-emulator.mjs"
   },
   "engines": {
     "node": ">=22"

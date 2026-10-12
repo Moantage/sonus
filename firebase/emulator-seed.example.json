@@ -1,0 +1,9 @@
+{
+  "accounts": [
+    {
+      "email": "tester@sonus.test",
+      "password": "sonus-emulator-only",
+      "displayName": "Sonus Tester"
+    }
+  ]
+}
