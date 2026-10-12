@@ -27,6 +27,22 @@ struct TrackTags {
         return tags
     }
 
+    /// Reads a playing song's tags, caches its artwork (from the tags, else the source's cover
+    /// URL) and announces the tags so `LibraryStore` can replace a guessed title. Returns the artwork.
+    @MainActor
+    static func readForPlayback(_ asset: AVAsset, song: Song) async -> UIImage? {
+        let sources = SourceStore.shared
+        let client = sources.httpClient
+        let authorization = sources.source(id: song.sourceID).flatMap(sources.authorization(for:))
+        let tags = await read(from: asset)
+        var image = tags.artworkData.flatMap { ArtworkCache.save($0, for: song.id) }
+        if image == nil, ArtworkCache.image(for: song.id) == nil, let url = song.remoteArtworkURL {
+            image = await ArtworkCache.download(url, for: song.id, client: client, authorization: authorization)
+        }
+        NotificationCenter.default.post(name: .sonusTrackTagsRead, object: TrackTagsReading(songID: song.id, tags: tags))
+        return image
+    }
+
     private static func string(for identifier: AVMetadataIdentifier, in metadata: [AVMetadataItem]) async -> String? {
         guard let item = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: identifier).first,
               let value = try? await item.load(.stringValue) else {
@@ -68,6 +84,19 @@ enum ArtworkCache {
             try? jpeg.write(to: AppPaths.artworkFileURL(for: songID), options: .atomic)
         }
         return thumbnail
+    }
+
+    /// Downloads a source's cover art for the song and caches it.
+    static func download(
+        _ url: URL,
+        for songID: UUID,
+        client: StreamingHTTPClient,
+        authorization: RequestAuthorization?
+    ) async -> UIImage? {
+        guard let data = try? await client.data(url, authorization: authorization, maxBytes: 8 * 1024 * 1024).data else {
+            return nil
+        }
+        return save(data, for: songID)
     }
 
     static func image(for songID: UUID) -> UIImage? {

@@ -11,13 +11,14 @@ import SonusCore
 /// source's secret header only to the hosts its ``RequestAuthorization`` allows. Seeking works
 /// because AVFoundation simply asks for other ranges. The class doesn't care what kind of secret it
 /// sends, so Sonus Server tokens and private buckets can use it later.
-final class AuthorizedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
+final class AuthorizedResourceLoader: NSObject, AVAssetResourceLoaderDelegate, @unchecked Sendable {
     let queue = DispatchQueue(label: "com.novoralabs.sonus.resource-loader")
 
     private let client: StreamingHTTPClient
     private let authorization: RequestAuthorization?
     private let contentType: String
-    /// Running requests, keyed by loading request. Touched only on `queue`.
+    /// Running requests, keyed by loading request. Touched only on `queue`, which is what makes the
+    /// class safe to share with the HTTP client's callbacks.
     private var tasks: [ObjectIdentifier: HTTPStreamTask] = [:]
 
     private init(client: StreamingHTTPClient, authorization: RequestAuthorization?, contentType: String) {
@@ -122,12 +123,16 @@ final class AuthorizedResourceLoader: NSObject, AVAssetResourceLoaderDelegate {
             } else {
                 message = statusMessage(head.statusCode)
             }
-            return NSError(domain: StreamingErrorMessages.sonusDomain, code: head.statusCode, userInfo: [NSLocalizedDescriptionKey: message])
+            return sonusError(code: head.statusCode, message: message)
         case .blockedURL:
-            return NSError(domain: StreamingErrorMessages.sonusDomain, code: -1, userInfo: [NSLocalizedDescriptionKey: StreamingErrorMessages.blocked])
+            return sonusError(code: -1, message: StreamingErrorMessages.blocked)
         default:
-            return NSError(domain: StreamingErrorMessages.sonusDomain, code: -2, userInfo: [NSLocalizedDescriptionKey: error.description])
+            return sonusError(code: -2, message: error.description)
         }
+    }
+
+    private static func sonusError(code: Int, message: String) -> NSError {
+        NSError(domain: StreamingErrorMessages.sonusDomain, code: code, userInfo: [NSLocalizedDescriptionKey: message])
     }
 
     private static func statusMessage(_ status: Int) -> String {
@@ -159,7 +164,8 @@ struct PlaybackUnavailableError: Error {
 /// stream from its source.
 @MainActor
 enum PlayerAssetFactory {
-    static func asset(for song: Song, sources: SourceStore = .shared) throws -> PreparedAsset {
+    static func asset(for song: Song, sources: SourceStore? = nil) throws -> PreparedAsset {
+        let sources = sources ?? .shared
         switch song.playbackRoute {
         case .localFile(let url):
             return PreparedAsset(asset: AVURLAsset(url: url), loader: nil, isLocal: true)

@@ -39,6 +39,13 @@
 	<true/>
 	<key>LSSupportsOpeningDocumentsInPlace</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Sonus plays music from servers on your home network, such as a NAS or a computer sharing your library.</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This lets us show you more relevant ads. You can use the app fully either way.</string>
 	<key>SKAdNetworkItems</key>

@@ -186,3 +186,13 @@ extension TimeInterval {
         return "\(minutes):" + String(format: "%02d", seconds)
     }
 }
+
+extension Song {
+    /// This song as it may leave the device (cloud library sync): no `user:password@` in its URLs.
+    var withoutURLCredentials: Song {
+        var copy = self
+        copy.remoteURL = remoteURL?.removingCredentials
+        copy.remoteArtworkURL = remoteArtworkURL?.removingCredentials
+        return copy
+    }
+}

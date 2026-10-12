@@ -4,16 +4,6 @@ import UIKit
 /// The lock screen, Control Center and headphone controls: Now Playing info plus remote commands.
 @MainActor
 final class NowPlayingCenter {
-    /// What the remote commands do. Each runs on the main thread.
-    struct Commands {
-        var play: () -> Void
-        var pause: () -> Void
-        var togglePlayPause: () -> Void
-        var next: () -> Void
-        var previous: () -> Void
-        var seek: (TimeInterval) -> Void
-    }
-
     /// The state shown on the lock screen.
     struct Snapshot {
         var title: String
@@ -27,30 +17,32 @@ final class NowPlayingCenter {
         var artwork: MPMediaItemArtwork?
     }
 
-    func register(_ commands: Commands) {
+    /// Routes the lock screen, Control Center and headphone buttons to `player`. Next and previous
+    /// are disabled (see ``updateAvailability(queueCount:hasDuration:)``) when there's nowhere to go.
+    func register(controlling player: AudioPlayerManager) {
         let center = MPRemoteCommandCenter.shared()
-        // Next and previous are disabled (see updateAvailability) when there's nowhere to go, and
-        // the player ignores them at the ends of the queue anyway.
-        let simple: [(MPRemoteCommand, () -> Void)] = [
-            (center.playCommand, commands.play),
-            (center.pauseCommand, commands.pause),
-            (center.togglePlayPauseCommand, commands.togglePlayPause),
-            (center.nextTrackCommand, commands.next),
-            (center.previousTrackCommand, commands.previous)
+        let simple: [(MPRemoteCommand, @MainActor (AudioPlayerManager) -> Void)] = [
+            (center.playCommand, { $0.resume() }),
+            (center.pauseCommand, { $0.pause() }),
+            (center.togglePlayPauseCommand, { $0.togglePlayback() }),
+            (center.nextTrackCommand, { $0.playNext() }),
+            (center.previousTrackCommand, { $0.playPrevious() })
         ]
         for (command, action) in simple {
             command.removeTarget(nil)
-            command.addTarget { _ in
-                DispatchQueue.main.async { action() }
+            command.addTarget { [weak player] _ in
+                DispatchQueue.main.async {
+                    if let player { action(player) }
+                }
                 return .success
             }
         }
 
         center.changePlaybackPositionCommand.removeTarget(nil)
-        center.changePlaybackPositionCommand.addTarget { event in
+        center.changePlaybackPositionCommand.addTarget { [weak player] event in
             guard let positionEvent = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
             let position = positionEvent.positionTime
-            DispatchQueue.main.async { commands.seek(position) }
+            DispatchQueue.main.async { player?.seek(to: position) }
             return .success
         }
         updateAvailability(queueCount: 0, hasDuration: false)
