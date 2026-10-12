@@ -1,10 +1,13 @@
 import AVFoundation
 import Foundation
+import SonusCore
 
 final class LibraryStore: ObservableObject {
     @Published private(set) var songs: [Song] = []
     @Published private(set) var playlists: [Playlist] = []
     @Published var lastImportError: String?
+
+    private var observers: [NSObjectProtocol] = []
 
     private let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
@@ -21,6 +24,8 @@ final class LibraryStore: ObservableObject {
 
     init() {
         loadLibrary()
+        observeEngineEvents()
+        startSources()
     }
 
     func songs(for playlistID: Playlist.ID?) -> [Song] {
@@ -137,19 +142,23 @@ final class LibraryStore: ObservableObject {
             playlists[index].songIDs.removeAll { $0 == song.id }
         }
 
-        do {
-            try FileManager.default.removeItem(at: AppPaths.fileURL(for: song))
-        } catch {
-            print("Error deleting song file: \(error)")
+        if song.isDownloadedLocally || song.remoteURL == nil {
+            do {
+                try FileManager.default.removeItem(at: AppPaths.fileURL(for: song))
+            } catch {
+                print("Error deleting song file: \(error)")
+            }
         }
+        ArtworkCache.remove(for: song.id)
         persistLibrary()
     }
 
     // MARK: - Cloud sync helpers
 
-    /// The current library as a snapshot, for uploading to the cloud.
+    /// The current library as a snapshot, for uploading to the cloud. Source credentials never
+    /// appear in it: they live only in the Keychain, and any `user:password@` in a URL is removed.
     func currentSnapshot() -> LibrarySnapshot {
-        LibrarySnapshot(songs: songs, playlists: playlists)
+        LibrarySnapshot(songs: songs.map(\.withoutURLCredentials), playlists: playlists)
     }
 
     /// Merges a cloud snapshot into the local library (adds entries not already
@@ -248,5 +257,172 @@ final class LibraryStore: ObservableObject {
             productionHouse: productionHouse?.isEmpty == false ? productionHouse : nil,
             duration: duration
         )
+    }
+}
+
+// MARK: - Sources
+
+extension LibraryStore {
+    /// Songs listed by a source, in library order.
+    func songs(fromSource sourceID: UUID) -> [Song] {
+        songs.filter { $0.sourceID == sourceID }
+    }
+
+    /// Applies a refreshed listing from `source`. Songs are matched by the source's stable track
+    /// IDs, so a refresh updates them in place (downloads, playlists and play history survive)
+    /// instead of duplicating them. New tracks go to the top; tracks the source dropped are
+    /// removed unless they're downloaded.
+    @discardableResult
+    func applySourceLibrary(_ library: LoadedLibrary, from source: MusicSource) -> SourceMergeSummary {
+        let existing: [ExistingSourceSong<Song.ID>] = songs.compactMap { song in
+            guard song.sourceID == source.id, let remoteID = song.remoteID else { return nil }
+            return ExistingSourceSong(localID: song.id, remoteID: remoteID, isDownloaded: song.isDownloadedLocally)
+        }
+        let plan = SourceMergePlanner.plan(existing: existing, incoming: library.tracks)
+
+        var updated = songs
+        let indexByID = Dictionary(updated.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
+        for update in plan.updates {
+            guard let index = indexByID[update.localID] else { continue }
+            updated[index] = Self.song(updated[index], refreshedWith: update.track)
+        }
+        let removed = Set(plan.removals)
+        updated.removeAll { removed.contains($0.id) }
+        updated.insert(contentsOf: plan.inserts.map { Self.song(from: $0, sourceID: source.id) }, at: 0)
+
+        if updated != songs {
+            songs = updated
+            removeFromPlaylists(removed)
+            removed.forEach(ArtworkCache.remove(for:))
+            persistLibrary()
+        }
+        return SourceMergeSummary(
+            added: plan.inserts.count,
+            updated: plan.updates.count,
+            removed: plan.removals.count,
+            keptOffline: plan.keptOffline.count
+        )
+    }
+
+    /// Removes every song from a source, with its downloaded file and cached artwork.
+    func removeSongs(fromSource sourceID: UUID) {
+        let doomed = songs.filter { $0.sourceID == sourceID }
+        guard !doomed.isEmpty else { return }
+        for song in doomed {
+            try? FileManager.default.removeItem(at: AppPaths.fileURL(for: song))
+            ArtworkCache.remove(for: song.id)
+        }
+        let ids = Set(doomed.map(\.id))
+        songs.removeAll { ids.contains($0.id) }
+        removeFromPlaylists(ids)
+        persistLibrary()
+    }
+
+    /// Uses a song's own tags in place of a title guessed from its file name, and fills in an
+    /// unknown duration. Tags never overwrite details the source itself provided.
+    func applyReadTags(_ tags: TrackTags, to songID: Song.ID) {
+        guard let index = songs.firstIndex(where: { $0.id == songID }) else { return }
+        let song = songs[index]
+        let current = TrackDetails(
+            title: song.title,
+            artist: song.artist,
+            album: song.albumName,
+            duration: song.duration,
+            isProvisional: song.hasProvisionalMetadata == true
+        )
+        let next = current.applyingTags(title: tags.title, artist: tags.artist, album: tags.album, duration: tags.duration)
+        guard next != current else { return }
+        var updated = song
+        updated.title = next.title
+        updated.artist = next.artist
+        updated.albumName = next.album
+        updated.duration = next.duration
+        updated.hasProvisionalMetadata = next.isProvisional ? true : nil
+        songs[index] = updated
+        persistLibrary()
+    }
+
+    private func removeFromPlaylists(_ songIDs: Set<Song.ID>) {
+        guard !songIDs.isEmpty else { return }
+        for index in playlists.indices {
+            playlists[index].songIDs.removeAll { songIDs.contains($0) }
+        }
+    }
+
+    private func observeEngineEvents() {
+        let center = NotificationCenter.default
+        observers.append(center.addObserver(forName: .sonusTrackTagsRead, object: nil, queue: .main) { [weak self] note in
+            guard let reading = note.object as? TrackTagsReading else { return }
+            self?.applyReadTags(reading.tags, to: reading.songID)
+        })
+        // A finished download can be read locally: replace a guessed title with the file's tags.
+        observers.append(center.addObserver(forName: .sonusDownloadCompleted, object: nil, queue: .main) { [weak self] note in
+            guard let self, let songID = note.object as? UUID,
+                  let song = self.songs.first(where: { $0.id == songID }), song.hasProvisionalMetadata == true else { return }
+            MainActor.assumeIsolated { TrackTagEnricher.shared.enqueue([song], library: self) }
+        })
+    }
+
+    /// Refreshes stale sources in the background, and in DEBUG builds runs the launch-argument hooks.
+    private func startSources() {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            #if DEBUG
+            await DebugLaunchHooks.run(library: self)
+            #endif
+            await SourceStore.shared.refreshStaleSources(into: self)
+        }
+    }
+
+    private static func song(from track: RemoteTrack, sourceID: UUID) -> Song {
+        let id = UUID()
+        var song = Song(
+            id: id,
+            title: track.title,
+            artist: track.artist,
+            albumName: track.album,
+            productionHouse: nil,
+            fileName: AudioFileType.localFileName(songID: id, url: track.url, mimeType: track.mimeType),
+            originalFileName: track.url.lastPathComponent,
+            duration: track.duration ?? 0,
+            importedAt: Date()
+        )
+        song.remoteURL = track.url
+        song.sourceID = sourceID
+        song.remoteID = track.remoteID
+        song.remoteArtworkURL = track.artworkURL
+        song.remoteRevision = track.revision
+        song.remoteSHA256 = track.sha256
+        song.hasProvisionalMetadata = track.hasProvisionalMetadata ? true : nil
+        return song
+    }
+
+    private static func song(_ original: Song, refreshedWith track: RemoteTrack) -> Song {
+        var song = original
+        let details = TrackDetails(
+            title: song.title,
+            artist: song.artist,
+            album: song.albumName,
+            duration: song.duration,
+            isProvisional: song.hasProvisionalMetadata == true
+        ).refreshed(with: track)
+        song.title = details.title
+        song.artist = details.artist
+        song.albumName = details.album
+        song.duration = details.duration
+        song.hasProvisionalMetadata = details.isProvisional ? true : nil
+
+        // A changed file makes the downloaded copy stale: drop it so the new version streams.
+        if let old = song.remoteRevision, let new = track.revision, old != new, song.isDownloadedLocally {
+            try? FileManager.default.removeItem(at: AppPaths.fileURL(for: song))
+        }
+        song.remoteURL = track.url
+        song.remoteArtworkURL = track.artworkURL
+        song.remoteRevision = track.revision
+        song.remoteSHA256 = track.sha256
+        if !song.isDownloadedLocally {
+            song.fileName = AudioFileType.localFileName(songID: song.id, url: track.url, mimeType: track.mimeType)
+        }
+        return song
     }
 }

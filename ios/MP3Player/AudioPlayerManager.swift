@@ -1,9 +1,14 @@
 import AVFoundation
 import MediaPlayer
+import SonusCore
 import SwiftUI
 import UIKit
 
-final class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegate {
+/// Plays the library. Imported and downloaded songs play from their file; everything else streams
+/// from its source. Playback runs on ``QueuePlayerEngine`` (an `AVQueuePlayer`), which preloads the
+/// next song so streams start without a gap.
+@MainActor
+final class AudioPlayerManager: NSObject, ObservableObject {
     private enum KeychainKeys {
         static let lastPlayedSongID = "lastPlayedSongID"
     }
@@ -20,10 +25,20 @@ final class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegat
     @Published private(set) var artworkImage: UIImage?
     @Published var repeatMode: RepeatMode = .off {
         didSet {
+            refreshUpcomingItem()
             updateNowPlayingInfo()
         }
     }
     @Published var lastPlaybackError: String?
+
+    // MARK: - Streaming
+
+    /// True while playback waits for the network: a stream starting, a seek loading, or a stall.
+    @Published private(set) var isBuffering = false
+    /// True when the current song streams from its source instead of playing a file on this device.
+    @Published private(set) var isStreaming = false
+    /// Seconds of the current song loaded so far, for a buffer bar under the scrubber.
+    @Published private(set) var bufferedTime: TimeInterval = 0
 
     // MARK: - Premium: advanced controls
 
@@ -37,11 +52,16 @@ final class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegat
     /// Premium high-quality output (higher session sample rate + best route).
     @Published private(set) var highQualityAudioEnabled: Bool
 
-    private var audioPlayer: AVAudioPlayer?
-    private var progressTimer: Timer?
+    private let engine = QueuePlayerEngine()
+    private let nowPlaying = NowPlayingCenter()
+    private let audioSession = AudioSessionController()
     private var currentIndex: Int?
     private var artwork: MPMediaItemArtwork?
     private var sleepTimer: Timer?
+    /// What the person asked for, as opposed to what the player is doing (it may be buffering or
+    /// interrupted). Decides whether to resume after an interruption.
+    private var wantsPlayback = false
+    private var resumeAfterInterruption = false
 
     override init() {
         if let rawID = KeychainManager.shared.retrieve(for: KeychainKeys.lastPlayedSongID) {
@@ -51,13 +71,9 @@ final class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegat
 
         super.init()
         configureAudioSession()
-        configureRemoteCommands()
-        startProgressTimer()
-    }
-
-    deinit {
-        progressTimer?.invalidate()
-        sleepTimer?.invalidate()
+        engine.events = engineEvents()
+        audioSession.observe(audioSessionHandlers())
+        nowPlaying.register(controlling: self)
     }
 
     var progress: Double {
@@ -70,82 +86,96 @@ final class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegat
 
     func play(song: Song, in queue: [Song]) {
         activeQueue = queue
-
-        guard let index = queue.firstIndex(of: song) else {
-            load(song: song, shouldAutoPlay: true)
-            return
-        }
-
-        currentIndex = index
+        currentIndex = queue.firstIndex { $0.id == song.id }
         load(song: song, shouldAutoPlay: true)
     }
 
     func togglePlayback() {
-        isPlaying ? pause() : resume()
+        if isPlaying {
+            pause()
+        } else {
+            resume()
+        }
     }
 
     func pause() {
-        audioPlayer?.pause()
+        wantsPlayback = false
+        engine.pause()
         isPlaying = false
         updateNowPlayingInfo()
     }
 
     func resume() {
-        guard let audioPlayer else {
+        guard !engine.hasFailed else {
+            // Nothing loaded, or the last attempt failed (e.g. offline): load the song again.
             if let currentSong {
                 load(song: currentSong, shouldAutoPlay: true)
             }
             return
         }
-
-        audioPlayer.play()
-        audioPlayer.enableRate = true
-        audioPlayer.rate = playbackSpeed
-        isPlaying = true
-        updateNowPlayingInfo()
+        startPlayback()
     }
 
     func stopPlayback() {
-        audioPlayer?.stop()
-        audioPlayer = nil
+        wantsPlayback = false
+        engine.stop()
         currentSong = nil
         activeQueue = []
         currentIndex = nil
         currentTime = 0
         duration = 0
+        bufferedTime = 0
         isPlaying = false
+        isBuffering = false
+        isStreaming = false
         artwork = nil
         artworkImage = nil
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        nowPlaying.clear()
         updateRemoteCommandAvailability()
     }
 
+    /// Keeps the queue in step with the library: deleted songs leave it, and refreshed details
+    /// (tags read, a download finished) replace the old copies.
     func syncLibrary(with songs: [Song]) {
-        let validSongIDs = Set(songs.map(\.id))
-
-        activeQueue.removeAll { validSongIDs.contains($0.id) == false }
-
-        if let currentSong, validSongIDs.contains(currentSong.id) == false {
-            stopPlayback()
-        } else if let currentSong, let index = activeQueue.firstIndex(of: currentSong) {
-            currentIndex = index
+        let byID = Dictionary(songs.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let queue = activeQueue.compactMap { byID[$0.id] }
+        if queue != activeQueue {
+            activeQueue = queue
         }
 
-        if let lastPlayedSongID, validSongIDs.contains(lastPlayedSongID) == false {
+        if let currentSong {
+            guard let fresh = byID[currentSong.id] else {
+                stopPlayback()
+                return
+            }
+            currentIndex = activeQueue.firstIndex { $0.id == fresh.id }
+            if fresh != currentSong {
+                self.currentSong = fresh
+                updateNowPlayingInfo()
+            }
+        }
+
+        if let lastPlayedSongID, byID[lastPlayedSongID] == nil {
             persistLastPlayedSongID(nil)
         }
+        refreshUpcomingItem()
     }
 
     func playNext() {
-        guard activeQueue.isEmpty == false else {
+        guard let currentIndex, currentIndex + 1 < activeQueue.count else {
             return
         }
 
-        if let currentIndex, currentIndex + 1 < activeQueue.count {
-            let nextIndex = currentIndex + 1
-            self.currentIndex = nextIndex
-            load(song: activeQueue[nextIndex], shouldAutoPlay: true)
-            return
+        let nextIndex = currentIndex + 1
+        let next = activeQueue[nextIndex]
+        self.currentIndex = nextIndex
+        if let upcoming = engine.upcomingItem, upcoming.songID == next.id, upcoming.status != .failed {
+            // Already preloaded: keep what it has buffered.
+            engine.advanceToUpcoming()
+            becomeCurrent(upcoming, song: next)
+            startPlayback()
+        } else {
+            load(song: next, shouldAutoPlay: true)
         }
     }
 
@@ -155,7 +185,13 @@ final class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegat
         }
 
         if currentTime > 3, let currentSong {
-            load(song: currentSong, shouldAutoPlay: true)
+            // Restart the current song.
+            if engine.hasFailed {
+                load(song: currentSong, shouldAutoPlay: true)
+            } else {
+                seek(to: 0)
+                startPlayback()
+            }
             return
         }
 
@@ -175,8 +211,7 @@ final class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegat
     /// Sets pitch-preserved playback speed and applies it immediately.
     func setPlaybackSpeed(_ speed: Float) {
         playbackSpeed = speed
-        audioPlayer?.enableRate = true
-        if isPlaying { audioPlayer?.rate = speed }   // takes effect now; else applied on next play
+        engine.setRate(speed)
         updateNowPlayingInfo()
     }
 
@@ -218,262 +253,242 @@ final class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegat
     }
 
     func seek(to newTime: TimeInterval) {
-        guard let audioPlayer, duration > 0 else {
+        guard engine.currentItem != nil, duration > 0 else {
             return
         }
 
         let clampedTime = min(max(newTime, 0), duration)
-        audioPlayer.currentTime = clampedTime
         currentTime = clampedTime
+        engine.seek(to: clampedTime, exact: !isStreaming) { [weak self] reached in
+            guard let self else { return }
+            if let reached {
+                self.currentTime = reached
+            }
+            self.updateNowPlayingInfo()
+        }
+        updateNowPlayingInfo()
+    }
+}
+
+// MARK: - Loading and the queue
+
+private extension AudioPlayerManager {
+    var nextSong: Song? {
+        guard let currentIndex, currentIndex + 1 < activeQueue.count else { return nil }
+        return activeQueue[currentIndex + 1]
+    }
+
+    func makeItem(for song: Song) throws -> SonusPlayerItem {
+        SonusPlayerItem(songID: song.id, prepared: try PlayerAssetFactory.asset(for: song))
+    }
+
+    func load(song: Song, shouldAutoPlay: Bool) {
+        let item: SonusPlayerItem
+        do {
+            item = try makeItem(for: song)
+        } catch {
+            lastPlaybackError = (error as? PlaybackUnavailableError)?.message ?? StreamingErrorMessages.generic
+            return
+        }
+
+        engine.replace(with: item)
+        becomeCurrent(item, song: song)
+        lastPlaybackError = nil
+
+        if shouldAutoPlay {
+            startPlayback()
+        } else {
+            wantsPlayback = false
+            engine.pause()
+            isPlaying = false
+            updateNowPlayingInfo()
+        }
+    }
+
+    func becomeCurrent(_ item: SonusPlayerItem, song: Song) {
+        currentSong = song
+        isStreaming = !item.isLocal
+        duration = song.duration > 0 ? song.duration : 0
+        currentTime = 0
+        bufferedTime = 0
+        artworkImage = ArtworkCache.image(for: song.id)
+        artwork = NowPlayingCenter.artwork(from: artworkImage)
+        persistLastPlayedSongID(song.id)
+
+        if let queueIndex = activeQueue.firstIndex(where: { $0.id == song.id }) {
+            currentIndex = queueIndex
+        } else {
+            activeQueue = [song]
+            currentIndex = 0
+        }
+
+        loadTags(of: item, for: song)
+        refreshUpcomingItem()
         updateNowPlayingInfo()
     }
 
-    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        DispatchQueue.main.async { [weak self] in
-            guard let self else {
-                return
-            }
+    func startPlayback() {
+        wantsPlayback = true
+        engine.play(rate: playbackSpeed)
+        isPlaying = true
+        updateNowPlayingInfo()
+    }
 
-            if self.repeatMode == .one, let currentSong = self.currentSong {
-                self.load(song: currentSong, shouldAutoPlay: true)
-                return
-            }
+    /// Preloads the next song so it starts without a gap, or empties the slot when repeat-one is on
+    /// or the queue ends here.
+    func refreshUpcomingItem() {
+        guard engine.currentItem != nil else { return }
+        guard repeatMode == .off, let next = nextSong else {
+            engine.setUpcoming(nil)
+            return
+        }
+        if let upcoming = engine.upcomingItem, upcoming.songID == next.id,
+           upcoming.isLocal == next.isDownloadedLocally, upcoming.status != .failed {
+            engine.setUpcoming(upcoming)
+        } else {
+            engine.setUpcoming(try? makeItem(for: next))
+        }
+    }
 
-            let beforeAdvance = self.currentSong
-            self.playNext()
+    /// The engine moved to the preloaded song by itself.
+    func handleAdvance(to item: SonusPlayerItem) {
+        guard item.songID != currentSong?.id, let index = activeQueue.firstIndex(where: { $0.id == item.songID }) else {
+            return
+        }
+        currentIndex = index
+        if item.status == .failed {
+            // The preload failed (say, the network dropped); try once more from scratch.
+            load(song: activeQueue[index], shouldAutoPlay: wantsPlayback)
+        } else {
+            becomeCurrent(item, song: activeQueue[index])
+        }
+    }
 
-            if beforeAdvance == self.currentSong {
+    func handleFinish() {
+        if repeatMode == .one {
+            seek(to: 0)
+            startPlayback()
+            return
+        }
+
+        let beforeAdvance = currentSong?.id
+        playNext()
+        if beforeAdvance == currentSong?.id {
+            // End of the queue: stop at the start of the last song, like before.
+            wantsPlayback = false
+            engine.pause()
+            isPlaying = false
+            seek(to: 0)
+            currentTime = 0
+            updateNowPlayingInfo()
+        }
+    }
+
+    /// Reads the song's own tags for lock-screen artwork; `LibraryStore` takes the title and artist.
+    func loadTags(of item: SonusPlayerItem, for song: Song) {
+        Task { [weak self] in
+            let image = await TrackTags.readForPlayback(item.asset, song: song)
+            guard let self, self.currentSong?.id == song.id, let image else { return }
+            self.artworkImage = image
+            self.artwork = NowPlayingCenter.artwork(from: image)
+            self.updateNowPlayingInfo()
+        }
+    }
+
+    func engineEvents() -> QueuePlayerEngine.Events {
+        QueuePlayerEngine.Events(
+            tick: { [weak self] time, buffered in
+                guard let self else { return }
+                if abs(time - self.currentTime) >= 0.01 { self.currentTime = time }
+                if abs(buffered - self.bufferedTime) >= 0.5 { self.bufferedTime = buffered }
+            },
+            durationKnown: { [weak self] seconds in
+                self?.duration = seconds
+                self?.updateNowPlayingInfo()
+            },
+            statusChanged: { [weak self] playing, buffering in
+                self?.isPlaying = playing
+                self?.isBuffering = buffering
+                self?.updateNowPlayingInfo()
+            },
+            advanced: { [weak self] item in self?.handleAdvance(to: item) },
+            finished: { [weak self] in self?.handleFinish() },
+            failed: { [weak self] error in
+                guard let self else { return }
                 self.isPlaying = false
-                self.currentTime = 0
+                self.isBuffering = false
+                self.lastPlaybackError = PlaybackErrorText.message(for: error)
                 self.updateNowPlayingInfo()
             }
-        }
+        )
     }
+}
 
-    private func load(song: Song, shouldAutoPlay: Bool) {
-        do {
-            let url = AppPaths.fileURL(for: song)
-            let player = try AVAudioPlayer(contentsOf: url)
-            player.delegate = self
-            player.prepareToPlay()
+// MARK: - Audio session, lock screen and remote commands
 
-            audioPlayer = player
-            currentSong = song
-            duration = player.duration
-            currentTime = 0
-            artworkImage = extractArtworkImage(for: url)
-            artwork = makeArtwork(from: artworkImage)
-            persistLastPlayedSongID(song.id)
-
-            if let queueIndex = activeQueue.firstIndex(of: song) {
-                currentIndex = queueIndex
-            } else {
-                activeQueue = [song]
-                currentIndex = 0
-            }
-
-            // Preserve the chosen playback speed across track changes.
-            player.enableRate = true
-
-            if shouldAutoPlay {
-                player.play()
-                player.rate = playbackSpeed
-                isPlaying = true
-            } else {
-                isPlaying = false
-            }
-
-            updateRemoteCommandAvailability()
-            updateNowPlayingInfo()
-            lastPlaybackError = nil
-        } catch {
-            lastPlaybackError = "This track could not be played."
-        }
-    }
-
-    private func configureAudioSession() {
-        let session = AVAudioSession.sharedInstance()
-
-        do {
-            // High quality: long-form audio mode routes to the best available
-            // output and enables high-quality Bluetooth (A2DP) + AirPlay.
-            let options: AVAudioSession.CategoryOptions = [.allowAirPlay, .allowBluetoothA2DP]
-            let mode: AVAudioSession.Mode = highQualityAudioEnabled ? .default : .default
-            try session.setCategory(.playback, mode: mode, options: options)
-
-            if highQualityAudioEnabled {
-                // Prefer a high sample rate so we never downsample premium output.
-                try? session.setPreferredSampleRate(48_000)
-                try? session.setPreferredIOBufferDuration(0.005)
-            } else {
-                try? session.setPreferredSampleRate(44_100)
-            }
-
-            try session.setActive(true)
-            UIApplication.shared.beginReceivingRemoteControlEvents()
-        } catch {
+private extension AudioPlayerManager {
+    func configureAudioSession() {
+        if !audioSession.configure(highQuality: highQualityAudioEnabled) {
             lastPlaybackError = "Audio session setup failed."
         }
     }
 
-    private func configureRemoteCommands() {
-        let commandCenter = MPRemoteCommandCenter.shared()
-        commandCenter.playCommand.removeTarget(nil)
-        commandCenter.pauseCommand.removeTarget(nil)
-        commandCenter.nextTrackCommand.removeTarget(nil)
-        commandCenter.previousTrackCommand.removeTarget(nil)
-        commandCenter.togglePlayPauseCommand.removeTarget(nil)
-        commandCenter.changePlaybackPositionCommand.removeTarget(nil)
-
-        commandCenter.playCommand.addTarget { [weak self] _ in
-            guard let self else {
-                return .commandFailed
+    func audioSessionHandlers() -> AudioSessionController.Handlers {
+        AudioSessionController.Handlers(
+            interruptionBegan: { [weak self] in
+                guard let self else { return }
+                self.resumeAfterInterruption = self.wantsPlayback
+                self.isPlaying = false
+                self.updateNowPlayingInfo()
+            },
+            interruptionEnded: { [weak self] shouldResume in
+                guard let self else { return }
+                if shouldResume && self.resumeAfterInterruption {
+                    self.audioSession.reactivate()
+                    self.startPlayback()
+                }
+                self.resumeAfterInterruption = false
+            },
+            outputLost: { [weak self] in
+                // Headphones unplugged: the player paused itself; don't resume on the speaker later.
+                self?.wantsPlayback = false
+            },
+            mediaServicesReset: { [weak self] in
+                guard let self else { return }
+                self.configureAudioSession()
+                if let song = self.currentSong {
+                    self.load(song: song, shouldAutoPlay: false)
+                }
             }
+        )
+    }
 
-            DispatchQueue.main.async {
-                self.resume()
-            }
-            return .success
-        }
+    func updateRemoteCommandAvailability() {
+        nowPlaying.updateAvailability(queueCount: activeQueue.count, hasDuration: duration > 0)
+    }
 
-        commandCenter.pauseCommand.addTarget { [weak self] _ in
-            guard let self else {
-                return .commandFailed
-            }
-
-            DispatchQueue.main.async {
-                self.pause()
-            }
-            return .success
-        }
-
-        commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
-            guard let self else {
-                return .commandFailed
-            }
-
-            DispatchQueue.main.async {
-                self.togglePlayback()
-            }
-            return .success
-        }
-
-        commandCenter.nextTrackCommand.addTarget { [weak self] _ in
-            guard let self, self.activeQueue.count > 1 else {
-                return .commandFailed
-            }
-
-            DispatchQueue.main.async {
-                self.playNext()
-            }
-            return .success
-        }
-
-        commandCenter.previousTrackCommand.addTarget { [weak self] _ in
-            guard let self, self.activeQueue.isEmpty == false else {
-                return .commandFailed
-            }
-
-            DispatchQueue.main.async {
-                self.playPrevious()
-            }
-            return .success
-        }
-
-        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
-            guard
-                let self,
-                let positionEvent = event as? MPChangePlaybackPositionCommandEvent
-            else {
-                return .commandFailed
-            }
-
-            DispatchQueue.main.async {
-                self.seek(to: positionEvent.positionTime)
-            }
-            return .success
-        }
-
+    func updateNowPlayingInfo() {
         updateRemoteCommandAvailability()
-    }
-
-    private func updateRemoteCommandAvailability() {
-        let commandCenter = MPRemoteCommandCenter.shared()
-        commandCenter.nextTrackCommand.isEnabled = activeQueue.count > 1
-        commandCenter.previousTrackCommand.isEnabled = activeQueue.isEmpty == false
-        commandCenter.changePlaybackPositionCommand.isEnabled = duration > 0
-    }
-
-    private func startProgressTimer() {
-        progressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
-            self?.syncPlaybackState()
-        }
-        RunLoop.main.add(progressTimer!, forMode: .common)
-    }
-
-    private func syncPlaybackState() {
-        guard let audioPlayer else {
-            return
-        }
-
-        currentTime = audioPlayer.currentTime
-        duration = audioPlayer.duration
-        isPlaying = audioPlayer.isPlaying
-
-        if currentSong != nil {
-            updateNowPlayingInfo()
-        }
-    }
-
-    private func updateNowPlayingInfo() {
         guard let currentSong else {
-            MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+            nowPlaying.clear()
             return
         }
-
-        var info: [String: Any] = [
-            MPMediaItemPropertyTitle: currentSong.title,
-            MPMediaItemPropertyArtist: currentSong.displayArtist,
-            MPMediaItemPropertyPlaybackDuration: duration,
-            MPNowPlayingInfoPropertyElapsedPlaybackTime: currentTime,
-            MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? Double(playbackSpeed) : 0.0
-        ]
-
-        if let artwork {
-            info[MPMediaItemPropertyArtwork] = artwork
-        }
-
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
-        updateRemoteCommandAvailability()
+        let elapsed = engine.isSeeking ? currentTime : (engine.currentSeconds ?? currentTime)
+        nowPlaying.show(NowPlayingCenter.Snapshot(
+            title: currentSong.title,
+            artist: currentSong.displayArtist,
+            album: currentSong.albumName,
+            elapsed: elapsed,
+            duration: duration,
+            // 0 while paused or buffering, so the lock-screen clock doesn't run ahead.
+            rate: engine.isActuallyPlaying ? Double(playbackSpeed) : 0,
+            defaultRate: Double(playbackSpeed),
+            artwork: artwork
+        ))
     }
 
-    private func extractArtworkImage(for fileURL: URL) -> UIImage? {
-        let asset = AVURLAsset(url: fileURL)
-        let items = AVMetadataItem.metadataItems(from: asset.commonMetadata, filteredByIdentifier: .commonIdentifierArtwork)
-
-        guard
-            let data = items.first?.dataValue,
-            let image = UIImage(data: data)
-        else {
-            return nil
-        }
-
-        return image
-    }
-
-    private func makeArtwork(from image: UIImage?) -> MPMediaItemArtwork? {
-        if let image {
-            return MPMediaItemArtwork(boundsSize: image.size) { _ in image }
-        }
-
-        guard let fallbackImage = UIImage(named: "PlayerArtwork") else {
-            return nil
-        }
-
-        return MPMediaItemArtwork(boundsSize: fallbackImage.size) { _ in fallbackImage }
-    }
-
-    private func persistLastPlayedSongID(_ songID: Song.ID?) {
+    func persistLastPlayedSongID(_ songID: Song.ID?) {
+        guard lastPlayedSongID != songID || songID == nil else { return }
         lastPlayedSongID = songID
 
         if let songID {
