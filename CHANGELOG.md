@@ -2,6 +2,15 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-10-12 — Player reports streams that fail to load
+
+When a stream couldn't load (the server is down, or the phone is offline and the song isn't
+downloaded), the player kept showing the song as playing and no error appeared. `AVQueuePlayer`
+drops a failed item from its queue, and the engine only listened for failures of the player's
+current item. It now follows the item it's playing directly, so the failure reaches
+`lastPlaybackError` ("Couldn't reach the music server…") and the play button returns. Waiting with
+nothing to play no longer counts as playing.
+
 ## 2026-10-12 — Fix Firestore in emulator mode
 
 In `-SonusFirebaseEmulator` mode, Firestore tried to reach the emulator over TLS and every read and

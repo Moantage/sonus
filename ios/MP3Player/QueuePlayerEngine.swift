@@ -25,7 +25,9 @@ final class QueuePlayerEngine {
     private var timeObserver: Any?
     private var playerObservations: [NSKeyValueObservation] = []
     private var itemObservation: NSKeyValueObservation?
-    private weak var watchedItem: SonusPlayerItem?
+    /// The item the engine reports on. `AVQueuePlayer` drops an item that fails to load from its
+    /// queue, so `player.currentItem` can't be used to recognise that item's failure.
+    private var watchedItem: SonusPlayerItem?
     private var notificationTokens: [NSObjectProtocol] = []
     private var seekGeneration = 0
     private(set) var isSeeking = false
@@ -164,7 +166,7 @@ final class QueuePlayerEngine {
         reportedDuration = 0
         itemObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
             DispatchQueue.main.async {
-                guard let self, item === self.player.currentItem else { return }
+                guard let self, item === self.watchedItem else { return }
                 if item.status == .failed {
                     self.events?.failed(item.error)
                 } else if item.status == .readyToPlay {
@@ -194,7 +196,9 @@ final class QueuePlayerEngine {
         case .playing:
             events?.statusChanged(true, false)
         case .waitingToPlayAtSpecifiedRate:
-            events?.statusChanged(true, player.reasonForWaitingToPlay != .noItemToPlay)
+            // Waiting with nothing to play (the item failed and was dropped) isn't playing.
+            let hasItem = player.reasonForWaitingToPlay != .noItemToPlay
+            events?.statusChanged(hasItem, hasItem)
         case .paused:
             events?.statusChanged(false, false)
         @unknown default:
@@ -210,13 +214,13 @@ final class QueuePlayerEngine {
 
     private func itemDidFinish(_ item: AVPlayerItem?) {
         // With something preloaded, the player moves on by itself (or already has).
-        guard let item, item === player.currentItem, player.items().count == 1 else { return }
+        guard let item, item === watchedItem, item === player.currentItem, player.items().count == 1 else { return }
         events?.finished()
     }
 
     private func itemDidFail(_ item: AVPlayerItem?, error: (any Error)?) {
         guard let item else { return }
-        if item === player.currentItem {
+        if item === watchedItem {
             events?.failed(error)
         } else if player.items().contains(item) {
             // A preload failed: drop it so the current song ends normally and the next one loads fresh.
