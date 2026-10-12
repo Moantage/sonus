@@ -11,7 +11,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
-        FirebaseApp.configure()
+        FirebaseBootstrap.configure()
         AdsManager.shared.start()
         // Link StoreKit purchases to the signed-in user for server verification.
         Task { @MainActor in

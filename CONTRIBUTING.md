@@ -26,6 +26,28 @@ Thanks for helping. The full guide lives on the docs site:
    latest `main` and only merges if that passes. After the merge, the docs site redeploys
    automatically.
 
+## Testing sign-in without the production Firebase project
+
+The app requires a login. Debug builds can use the Firebase Local Emulator Suite instead of a
+real Firebase project. You don't need `GoogleService-Info.plist` or a Firebase account for this.
+Nothing reaches a real project, so test accounts never end up in the production user database.
+
+1. Install the Firebase CLI (`npm install -g firebase-tools`) and Java 11 or newer.
+2. Start the Auth and Firestore emulators: `npm run emulators`. This uses the offline
+   `demo-sonus` project. Data is kept in `firebase/emulator-data/` (gitignored) between runs, and
+   the Emulator UI is at http://127.0.0.1:4000.
+3. Create test accounts: `npm run emulators:seed`. This creates the accounts in
+   `firebase/emulator-seed.local.json` (gitignored; copy the `.example.json` next to it to start),
+   or `tester@sonus.test` / `sonus-emulator-only` from the example file if there's no local file.
+4. Run the app in the Simulator with the launch argument `-SonusFirebaseEmulator`. You can add it
+   in Xcode (Scheme → Run → Arguments) or pass it to
+   `xcrun simctl launch <device> com.novoralabs.mp3player -SonusFirebaseEmulator`. Sign in with
+   "Continue with email". To reach emulators on another machine, set the environment variable
+   `SONUS_FIREBASE_EMULATOR_HOST` to its address.
+
+Google, Apple and phone sign-in need the real project; use email in emulator mode. The flag is
+compiled out of release builds.
+
 ## Changing the spec
 
 `spec/` is the single source of truth. When you change the schema or the OpenAPI file, update

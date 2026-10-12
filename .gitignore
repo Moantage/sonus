@@ -23,6 +23,9 @@ Secrets.xcconfig
 firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
+# Firebase emulator data and local test accounts (see CONTRIBUTING.md)
+firebase/emulator-data/
+firebase/emulator-seed.local.json
 # Generic secrets
 .env
 .env.*
