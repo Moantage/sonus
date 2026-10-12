@@ -1,75 +1,69 @@
 import SwiftUI
 
-/// Three-page minimal onboarding, shown once before login.
+/// Three-page onboarding, shown once before login.
 struct OnboardingView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var page = 0
 
-    private let pages: [(icon: String, title: String, subtitle: String)] = [
-        ("music.note", "Your music, beautifully simple",
-         "Import your MP3s and play them anywhere — no clutter, no noise."),
-        ("waveform", "Built for listening",
-         "Background playback, a clean library, and controls that stay out of your way."),
-        ("lock.shield", "Private by design",
-         "Sign in your way — Apple, Google, email, or phone. Your data stays yours.")
+    private struct Page {
+        let icon: String
+        let title: String
+        let subtitle: String
+    }
+
+    private let pages: [Page] = [
+        Page(
+            icon: "music.note",
+            title: "Your music, beautifully simple",
+            subtitle: "Bring in the songs you own and play them anywhere. No clutter, no noise."
+        ),
+        Page(
+            icon: "waveform",
+            title: "Built for listening",
+            subtitle: "Background playback, a clean library, and controls that stay out of your way."
+        ),
+        Page(
+            icon: "lock.shield",
+            title: "Private by design",
+            subtitle: "Sign in your way: Apple, Google, email or phone. Your data stays yours."
+        )
     ]
 
     var body: some View {
         ZStack {
-            Theme.background
+            Theme.glowBackground
 
             VStack(spacing: 0) {
                 HStack {
                     Spacer()
                     Button("Skip") { finish() }
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(Theme.subtleText)
-                        .padding(24)
+                        .font(.system(.subheadline, weight: .semibold))
+                        .foregroundStyle(Theme.textSubtle)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .padding(.horizontal, 16)
                 }
 
                 TabView(selection: $page) {
                     ForEach(pages.indices, id: \.self) { index in
-                        VStack(spacing: 24) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 26, style: .continuous)
-                                    .fill(Theme.artworkGradient)
-                                    .frame(width: 96, height: 96)
-                                    .shadow(color: Theme.accent.opacity(0.4), radius: 24)
-                                Image(systemName: pages[index].icon)
-                                    .font(.system(size: 44, weight: .semibold))
-                                    .foregroundColor(Theme.accentInk)
-                            }
-                            .frame(height: 100)
-
-                            Text(pages[index].title)
-                                .font(.system(size: 28, weight: .bold))
-                                .foregroundColor(Theme.textPrimary)
-                                .multilineTextAlignment(.center)
-
-                            Text(pages[index].subtitle)
-                                .font(.system(size: 16))
-                                .foregroundColor(Theme.textSubtle)
-                                .multilineTextAlignment(.center)
-                                .lineSpacing(4)
-                        }
-                        .padding(.horizontal, 40)
-                        .tag(index)
+                        pageView(pages[index], isFirst: index == 0)
+                            .tag(index)
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
 
-                // Page dots
                 HStack(spacing: 8) {
                     ForEach(pages.indices, id: \.self) { index in
                         Capsule()
-                            .fill(index == page ? Theme.accent : Color.white.opacity(0.2))
+                            .fill(index == page ? Theme.accent : Theme.textPrimary.opacity(0.2))
                             .frame(width: index == page ? 26 : 7, height: 7)
                             .animation(.spring(duration: 0.3), value: page)
                     }
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Page \(page + 1) of \(pages.count)")
                 .padding(.bottom, 32)
 
-                PrimaryButton(title: page == pages.count - 1 ? "Get Started" : "Continue") {
+                PrimaryButton(title: page == pages.count - 1 ? "Get started" : "Continue") {
                     if page < pages.count - 1 {
                         withAnimation { page += 1 }
                     } else {
@@ -77,10 +71,42 @@ struct OnboardingView: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 48)
+                .padding(.bottom, 32)
             }
         }
-        .preferredColorScheme(.light)
+        .sensoryFeedback(.selection, trigger: page)
+    }
+
+    private func pageView(_ page: Page, isFirst: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 20) {
+            Spacer()
+            if isFirst {
+                BrandLogoTile(size: 88)
+            } else {
+                Image(systemName: page.icon)
+                    .font(.system(size: 38, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+                    .frame(width: 88, height: 88)
+                    .background(Theme.surfaceRaised, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
+                    .accessibilityHidden(true)
+            }
+
+            Text(page.title)
+                .font(.system(.largeTitle, weight: .bold))
+                .foregroundStyle(Theme.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(page.subtitle)
+                .font(.body)
+                .foregroundStyle(Theme.textSubtle)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 28)
+        .accessibilityElement(children: .combine)
     }
 
     private func finish() {

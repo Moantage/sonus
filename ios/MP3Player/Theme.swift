@@ -1,93 +1,119 @@
 import SwiftUI
 
-/// Single source of truth for Sonus' "Paper" look — a warm, editorial, print-inspired
-/// aesthetic: cream paper backgrounds, ink-black type, a single terracotta accent,
-/// serif display headlines and monospaced micro-labels (Novora Labs branding).
+/// Single source of truth for Sonus' **Ember** look: warm near-black graphite, one amber
+/// accent, bold SF Pro type, pill-shaped buttons and chips, small artwork corners.
 ///
-/// Restyle only: every screen, state, and component API is unchanged. Views read
-/// colors and fonts from here rather than hardcoding them. All symbol names are kept
-/// stable so the whole app adopts the new look at once.
+/// Ember owns colour and brand; layout and interaction follow the zero-learning-curve
+/// music-app conventions (tabs, mini-player, slide-up Now Playing). The app is dark only.
+/// Views read colours, type and shapes from here instead of hardcoding them.
 enum Theme {
     // MARK: Backgrounds
-    /// Warm paper base fill (the screen).
-    static let backgroundBase = Color(hex: 0xF2E9DB)
-    /// Tab bar / mini-player / raised chrome.
-    static let backgroundElevated = Color(hex: 0xECE0CB)
 
-    // Legacy gradient stops kept as paper tones so any older references still read on-brand.
-    static let backgroundTop = Color(hex: 0xF2E9DB)
-    static let backgroundMid = Color(hex: 0xECE0CB)
-    static let backgroundBottom = Color(hex: 0xE7DDC9)
+    /// Warm ink. The base fill of every screen.
+    static let backgroundBase = Color(hex: 0x14110E)
+    /// Raised chrome: sheets, the tab bar, cards that sit on the base.
+    static let backgroundElevated = Color(hex: 0x231D14)
+    /// Highest layer: menus and the bottom sheets' rows on press.
+    static let backgroundHighlight = Color(hex: 0x2E261B)
 
     // MARK: Surfaces & borders
-    /// Cards, rows, fields (opaque warm sand).
-    static let surface = Color(hex: 0xE9DCC6)
-    /// Selected row, chips, icon wells.
-    static let surfaceRaised = Color(hex: 0xECE0CB)
-    /// 1px hairline strokes on all cards / dividers.
-    static let hairline = Color(hex: 0x1C1613).opacity(0.12)
-    /// Back-compat alias used by a few older views.
-    static let card = Color(hex: 0xE9DCC6)
 
-    // MARK: Text (ink on paper)
-    /// Ink-black primary text.
-    static let textPrimary = Color(hex: 0x1C1613)
-    /// Secondary / captions (warm taupe).
-    static let textSubtle = Color(hex: 0x6F6252)
-    /// Back-compat alias.
-    static let subtleText = Color(hex: 0x6F6252)
-    /// Muted mono micro-label ink.
-    static let textMuted = Color(hex: 0xA8987F)
+    /// Cards, rows, fields.
+    static let surface = Color.white.opacity(0.06)
+    /// Selected rows, chips, icon wells.
+    static let surfaceRaised = Color.white.opacity(0.11)
+    /// 1px strokes, used sparingly (outlined buttons, dividers).
+    static let hairline = Color.white.opacity(0.10)
+    /// Outline for secondary pill buttons.
+    static let outline = Color(hex: 0xF3EEE6).opacity(0.38)
 
-    // MARK: Accent (terracotta)
-    static let accent = Color(hex: 0xB5432E)
-    static let accentLight = Color(hex: 0xC96A4F)
-    static let accentDeep = Color(hex: 0x8F3020)
-    /// Text / glyphs ON dark (ink) or accent fills — warm cream.
-    static let accentInk = Color(hex: 0xF2E9DB)
+    // MARK: Text
 
-    /// Ink — the near-black used for primary buttons and the play control.
-    static let ink = Color(hex: 0x1C1613)
+    /// Warm cream.
+    static let textPrimary = Color(hex: 0xF3EEE6)
+    /// Secondary text and captions.
+    static let textSubtle = Color(hex: 0xF3EEE6).opacity(0.62)
+    /// Tertiary text, disabled glyphs.
+    static let textMuted = Color(hex: 0xF3EEE6).opacity(0.38)
+
+    // MARK: Accent (amber)
+
+    static let accent = Color(hex: 0xE8B15E)
+    static let accentLight = Color(hex: 0xF0C77E)
+    static let accentDeep = Color(hex: 0xC98F3E)
+    /// Text and glyphs on amber fills.
+    static let accentInk = Color(hex: 0x1A1206)
 
     // MARK: Premium / status
-    static let premiumGold = Color(hex: 0xB5432E)
-    static let premiumGoldWell = Color(hex: 0xB5432E).opacity(0.12)
-    static let error = Color.red.opacity(0.9)
 
-    // MARK: Typography helpers
-    /// DM Serif Display stand-in — native New York serif for display headlines.
-    static func serif(_ size: CGFloat, weight: Font.Weight = .bold) -> Font {
-        .system(size: size, weight: weight, design: .serif)
-    }
-    /// Space Mono stand-in — native monospaced for eyebrows / micro-labels.
-    static func mono(_ size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        .system(size: size, weight: weight, design: .monospaced)
+    static let premiumGold = Color(hex: 0xFFD60A)
+    static let premiumGoldWell = Color(hex: 0xFFD60A).opacity(0.14)
+    static let error = Color.red.opacity(0.9)
+    static let success = Color(hex: 0x7FD6A0)
+
+    // MARK: Shape
+
+    enum Radius {
+        /// Song and playlist artwork.
+        static let artwork: CGFloat = 6
+        /// Cards, the mini-player, fields.
+        static let card: CGFloat = 8
+        /// Larger tiles (Home shortcuts, banners).
+        static let tile: CGFloat = 12
     }
 
     // MARK: Gradients
-    /// Warm album-art / avatar placeholder gradient (vermillion).
+
+    /// Album-art / avatar placeholder gradient (Ember handoff: 150°, amber → copper).
     static var artworkGradient: LinearGradient {
         LinearGradient(
-            colors: [Color(hex: 0xE8590C), Color(hex: 0xB7261D)],
+            colors: [accent, Color(hex: 0xC77D4A)],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
     }
 
-    /// Solid ink "gradient" for the primary play/pause button.
+    /// The big play button's fill.
     static var playGradient: LinearGradient {
-        LinearGradient(colors: [ink, ink], startPoint: .top, endPoint: .bottom)
+        LinearGradient(colors: [accentLight, accent, accentDeep], startPoint: .top, endPoint: .bottom)
     }
 
-    /// Flat warm-paper app background.
+    /// Flat warm-ink app background.
     static var background: some View {
         backgroundBase.ignoresSafeArea()
     }
 
-    /// Now Playing screen background — flat warm paper.
-    static var playerBackground: some View {
-        backgroundBase.ignoresSafeArea()
+    /// Top-lit warm glow used behind onboarding, login and the paywall.
+    static var glowBackground: some View {
+        ZStack {
+            backgroundBase
+            RadialGradient(
+                colors: [Color(hex: 0x2B2113), backgroundBase],
+                center: .top,
+                startRadius: 0,
+                endRadius: 520
+            )
+        }
+        .ignoresSafeArea()
     }
+}
+
+// MARK: - Typography
+
+/// Bold SF Pro, mapped to Dynamic Type text styles so every screen scales.
+extension Font {
+    /// Page titles ("Your Library", "Search").
+    static let emberPageTitle = Font.system(.title2, weight: .bold)
+    /// Big hero titles (playlist header, Now Playing title).
+    static let emberHero = Font.system(.title, weight: .bold)
+    /// Section headings on Home.
+    static let emberSection = Font.system(.title3, weight: .bold)
+    /// Row titles.
+    static let emberRowTitle = Font.system(.body, weight: .medium)
+    /// Row subtitles and captions.
+    static let emberRowSubtitle = Font.system(.subheadline)
+    /// Labels on pill buttons.
+    static let emberButton = Font.system(.callout, weight: .bold)
 }
 
 // MARK: - Color hex helper
@@ -104,61 +130,155 @@ extension Color {
     }
 }
 
-// MARK: - Brand mark (Sonus — editorial waveform)
+// MARK: - Brand mark (locked: Waveform)
 
-/// The Sonus mark: five vertical bars, center-tallest, in ink with a terracotta
-/// center — a restrained, print-shop take on the equalizer glyph. Scales to any size.
+/// The Sonus mark: five amber bars, centre tallest, opacities 0.5 / 0.75 / 1 / 0.75 / 0.5.
+/// Drawn on an 88×88 grid (bars 10 wide, radius 5) and scaled to any size.
 struct WaveformMark: View {
     var size: CGFloat = 88
-    var color: Color = Theme.ink
+    var color: Color = Theme.accent
 
-    // On an 88×88 grid: bars 8 wide, x = 12/28/44/60/76, heights 22/44/62/38/20.
-    private let bars: [(x: CGFloat, h: CGFloat, accent: Bool)] = [
-        (12, 22, false), (28, 44, false), (44, 62, true), (60, 38, false), (76, 20, false)
+    private struct Bar {
+        let x: CGFloat
+        let height: CGFloat
+        let opacity: Double
+    }
+
+    private let bars: [Bar] = [
+        Bar(x: 10, height: 24, opacity: 0.5),
+        Bar(x: 26, height: 46, opacity: 0.75),
+        Bar(x: 42, height: 64, opacity: 1),
+        Bar(x: 58, height: 36, opacity: 0.75),
+        Bar(x: 74, height: 18, opacity: 0.5)
     ]
 
     var body: some View {
         let unit = size / 88
         ZStack {
-            ForEach(bars.indices, id: \.self) { i in
-                let bar = bars[i]
-                RoundedRectangle(cornerRadius: 1 * unit, style: .continuous)
-                    .fill(bar.accent ? Theme.accent : color)
-                    .frame(width: 8 * unit, height: bar.h * unit)
-                    .position(x: (bar.x + 4) * unit, y: size / 2)
+            ForEach(bars.indices, id: \.self) { index in
+                let bar = bars[index]
+                RoundedRectangle(cornerRadius: 5 * unit, style: .continuous)
+                    .fill(color.opacity(bar.opacity))
+                    .frame(width: 10 * unit, height: bar.height * unit)
+                    .position(x: (bar.x + 5) * unit, y: size / 2)
             }
         }
         .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
 }
 
-/// Waveform mark seated on a paper tile with a hairline border — used on Login,
-/// Onboarding, and the app-icon lockup.
+/// The mark on its warm graphite tile, as on the app icon. Used on Login and Onboarding.
 struct BrandLogoTile: View {
     var size: CGFloat = 88
 
     var body: some View {
-        WaveformMark(size: size * 0.62, color: Theme.ink)
+        WaveformMark(size: size * 0.66)
             .frame(width: size, height: size)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 2, style: .continuous))
+            .background(
+                RadialGradient(
+                    colors: [Color(hex: 0x241D12), Theme.backgroundBase],
+                    center: .top,
+                    startRadius: 0,
+                    endRadius: size
+                ),
+                in: RoundedRectangle(cornerRadius: size * 26 / 88, style: .continuous)
+            )
             .overlay(
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                RoundedRectangle(cornerRadius: size * 26 / 88, style: .continuous)
                     .stroke(Theme.hairline, lineWidth: 1)
             )
+            .shadow(color: Theme.accent.opacity(0.22), radius: size * 0.3)
+            .accessibilityHidden(true)
     }
 }
 
-// MARK: - Reusable card / border modifiers
+// MARK: - Card modifier
 
 extension View {
-    /// Surface card with hairline border. Editorial radius is near-square (2pt default).
-    func emberCard(cornerRadius: CGFloat = 2, fill: Color = Theme.surface) -> some View {
+    /// Surface card. Borders are opt-in: most cards rely on fill alone.
+    func emberCard(
+        cornerRadius: CGFloat = Theme.Radius.card,
+        fill: Color = Theme.surface,
+        bordered: Bool = false
+    ) -> some View {
         self
             .background(fill, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .stroke(Theme.hairline, lineWidth: 1)
-            )
+            .overlay {
+                if bordered {
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(Theme.hairline, lineWidth: 1)
+                }
+            }
+    }
+}
+
+// MARK: - Button styles
+
+/// Shrinks slightly while pressed, then springs back. The default for tappable cards and
+/// icon buttons.
+struct PressableButtonStyle: ButtonStyle {
+    var scale: CGFloat = 0.95
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? scale : 1)
+            .opacity(configuration.isPressed ? 0.82 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
+
+extension ButtonStyle where Self == PressableButtonStyle {
+    static var pressable: PressableButtonStyle { PressableButtonStyle() }
+}
+
+/// Full-width pill button.
+struct PillButtonStyle: ButtonStyle {
+    enum Kind {
+        /// Amber fill, ink label.
+        case primary
+        /// Cream fill, ink label (e.g. the white "Continue with Apple" look).
+        case light
+        /// Transparent with a cream outline.
+        case outline
+        /// Quiet surface fill.
+        case surface
+    }
+
+    var kind: Kind = .primary
+    var isEnabled = true
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.emberButton)
+            .foregroundStyle(foreground)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .padding(.horizontal, 20)
+            .background(background, in: Capsule())
+            .overlay {
+                if kind == .outline {
+                    Capsule().stroke(Theme.outline, lineWidth: 1)
+                }
+            }
+            .opacity(isEnabled ? 1 : 0.45)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+
+    private var foreground: Color {
+        switch kind {
+        case .primary, .light: return Theme.accentInk
+        case .outline, .surface: return Theme.textPrimary
+        }
+    }
+
+    private var background: Color {
+        switch kind {
+        case .primary: return Theme.accent
+        case .light: return Theme.textPrimary
+        case .outline: return .clear
+        case .surface: return Theme.surfaceRaised
+        }
     }
 }
 
@@ -172,12 +292,13 @@ struct ThemedField: View {
     var isSecure: Bool = false
     var contentType: UITextContentType?
 
+    @FocusState private var isFocused: Bool
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(label.uppercased())
-                .font(Theme.mono(11, weight: .regular))
-                .tracking(1.4)
-                .foregroundColor(Theme.accent)
+            Text(label)
+                .font(.system(.subheadline, weight: .semibold))
+                .foregroundStyle(Theme.textPrimary)
 
             Group {
                 if isSecure {
@@ -185,15 +306,23 @@ struct ThemedField: View {
                 } else {
                     TextField(placeholder, text: $text)
                         .keyboardType(keyboard)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                 }
             }
+            .focused($isFocused)
             .textContentType(contentType)
-            .font(.system(size: 16))
-            .foregroundColor(Theme.textPrimary)
-            .padding(14)
-            .emberCard(cornerRadius: 2)
+            .font(.body)
+            .foregroundStyle(Theme.textPrimary)
+            .tint(Theme.accent)
+            .padding(.horizontal, 14)
+            .frame(minHeight: 50)
+            .background(Theme.surfaceRaised, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
+                    .stroke(isFocused ? Theme.accent : .clear, lineWidth: 1.5)
+            )
+            .animation(.easeOut(duration: 0.15), value: isFocused)
         }
     }
 }
@@ -210,19 +339,11 @@ struct PrimaryButton: View {
                 if isLoading {
                     ProgressView().tint(Theme.accentInk)
                 } else {
-                    Text(title.uppercased())
-                        .font(Theme.mono(13, weight: .bold))
-                        .tracking(1.0)
-                        .foregroundColor(Theme.accentInk)
+                    Text(title)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 52)
-            .background(
-                Theme.ink.opacity(isDisabled ? 0.4 : 1),
-                in: RoundedRectangle(cornerRadius: 2, style: .continuous)
-            )
         }
+        .buttonStyle(PillButtonStyle(kind: .primary, isEnabled: !isDisabled))
         .disabled(isDisabled || isLoading)
     }
 }
@@ -232,9 +353,65 @@ struct InlineError: View {
 
     var body: some View {
         Text(message)
-            .font(.system(size: 13))
-            .foregroundColor(Theme.error)
+            .font(.footnote)
+            .foregroundStyle(Theme.error)
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity)
+    }
+}
+
+/// Horizontal filter chip ("Playlists", "Downloaded"). Selected = amber fill, ink label.
+struct FilterPill: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(.subheadline, weight: .medium))
+                .foregroundStyle(isSelected ? Theme.accentInk : Theme.textPrimary)
+                .padding(.horizontal, 14)
+                .frame(minHeight: 34)
+                .background(isSelected ? Theme.accent : Theme.surfaceRaised, in: Capsule())
+        }
+        .buttonStyle(.pressable)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// Round initials avatar, used top-left on every tab and on the profile header.
+struct AvatarView: View {
+    let initials: String
+    var size: CGFloat = 32
+
+    var body: some View {
+        Text(initials.isEmpty ? "?" : initials)
+            .font(.system(size: size * 0.4, weight: .bold))
+            .foregroundStyle(Theme.accentInk)
+            .frame(width: size, height: size)
+            .background(Theme.artworkGradient, in: Circle())
+    }
+}
+
+/// Section heading with an optional trailing action, Home-style.
+struct SectionHeader: View {
+    let title: String
+    var actionTitle: String?
+    var action: (() -> Void)?
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(.emberSection)
+                .foregroundStyle(Theme.textPrimary)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 8)
+            if let actionTitle, let action {
+                Button(actionTitle, action: action)
+                    .font(.system(.footnote, weight: .semibold))
+                    .foregroundStyle(Theme.textSubtle)
+            }
+        }
     }
 }

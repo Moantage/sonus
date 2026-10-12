@@ -28,6 +28,19 @@ files.
   LFS parsing, rate-limit handling, the ranged HTTP client and the token host policy, with Swift
   Testing tests against a local HTTP server.
 - **Docs:** GitHub hosting (private repositories, tokens, limits) and which hosts receive a token.
+## 2026-10-12 — Spotify-style shell in Ember (dark)
+
+- Dark-only Ember theme (warm graphite, one amber accent, bold SF Pro, pill buttons and chips).
+- New shell: Home / Search / Your Library tabs, avatar → Profile & settings, persistent mini-player
+  (tap to expand, swipe to skip), and a Now Playing that grows out of it (drag down to dismiss,
+  background tinted from the artwork, working queue, AirPlay picker).
+- Tap a song to play it in place. New song rows with equaliser bars and a "⋯" bottom sheet
+  (add to playlist, remove, download, delete). Library filter pills and playlist pages with a
+  download toggle and a big play button. Full-screen "name your playlist" flow.
+- Paywall: sources, streaming and downloads are free with an account; Premium is profile banners,
+  sync across devices and ad-free listening. High-quality audio and playback controls are no
+  longer gated (pending owner confirmation).
+- DEBUG-only `-SonusUIReview` launch argument opens the shell without sign-in for UI review.
 
 ## 2026-10-11 — Xcode project uses a synced folder
 
