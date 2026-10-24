@@ -2,6 +2,23 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-10-24 — Fix "Audio session setup failed" on device; build 2
+
+- Playback on a real iPhone showed "Audio session setup failed." and nothing played. The audio
+  session asked for the `.allowAirPlay` and `.allowBluetoothA2DP` options with the `.playback`
+  category. iOS only accepts those with `.playAndRecord`, so setting the category threw.
+- The session now uses `.playback` with the long-form audio policy. That is Apple's setting for
+  music apps, and it routes to AirPlay and Bluetooth by itself.
+- Build number raised to 2 for the next TestFlight upload.
+
+## 2026-10-24 — Sign with the Sonus team; Sign in with Apple entitlement
+
+- The app is now signed by team P7S9BC8T7P, the paid team on the project's Apple ID
+  (dhruvabisht.work@proton.me). It was signed by a free personal team, which can't publish to
+  TestFlight or the App Store. Build 1.0 (1) has been uploaded to TestFlight from this setup.
+- Added `MP3Player.entitlements` with the Sign in with Apple capability, so "Continue with Apple"
+  works in TestFlight and App Store builds.
+
 ## 2026-10-24 — Ember redesign: generated covers, a living Now Playing, one-tap Shuffle
 
 - **Every song has a cover.** Songs without artwork get one drawn from their ID: a two-tone

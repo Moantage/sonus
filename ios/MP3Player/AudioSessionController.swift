@@ -22,10 +22,10 @@ final class AudioSessionController {
         let session = AVAudioSession.sharedInstance()
 
         do {
-            // High quality: long-form audio mode routes to the best available
-            // output and enables high-quality Bluetooth (A2DP) + AirPlay.
-            let options: AVAudioSession.CategoryOptions = [.allowAirPlay, .allowBluetoothA2DP]
-            try session.setCategory(.playback, mode: .default, options: options)
+            // Long-form audio routes music to the best output (AirPlay, Bluetooth A2DP) on its own.
+            // Don't pass .allowAirPlay or .allowBluetoothA2DP: they're only valid for .playAndRecord,
+            // and .playback rejects them, so setCategory threw and playback never started.
+            try session.setCategory(.playback, mode: .default, policy: .longFormAudio)
 
             if highQuality {
                 // Prefer a high sample rate so we never downsample premium output.

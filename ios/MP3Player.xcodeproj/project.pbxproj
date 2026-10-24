@@ -28,6 +28,7 @@
 				Config.xcconfig,
 				"GoogleService-Info.example.plist",
 				Info.plist,
+				MP3Player.entitlements,
 				MP3Player.storekit,
 				Secrets.example.xcconfig,
 				Secrets.xcconfig,
@@ -219,10 +220,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5VB2ZU339Z;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = P7S9BC8T7P;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MP3Player/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = MP3Player/MP3Player.entitlements;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -246,10 +248,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5VB2ZU339Z;
+				CURRENT_PROJECT_VERSION = 2;
+				DEVELOPMENT_TEAM = P7S9BC8T7P;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = MP3Player/Info.plist;
+				CODE_SIGN_ENTITLEMENTS = MP3Player/MP3Player.entitlements;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
