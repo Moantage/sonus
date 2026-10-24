@@ -8,8 +8,8 @@
  * Two entry points:
  *   1. appStoreNotificationsV2  (HTTPS webhook)
  *        Apple → your server on every lifecycle event: purchase, renewal,
- *        expiry, refund, revoke. Keeps isPremium correct even when the app
- *        isn't running (e.g. a subscription lapses → ads come back).
+ *        refund, revoke. Keeps isPremium correct even when the app
+ *        isn't running (e.g. a refunded purchase → ads come back).
  *        Linked to a user via the transaction's `appAccountToken`.
  *
  *   2. syncAppStoreEntitlement  (callable)
@@ -40,16 +40,16 @@ const db = admin.firestore();
 // ---- Config (set via `firebase functions:config` params or .env) -----------
 
 // Your app's bundle ID.
-const BUNDLE_ID = defineString("APPLE_BUNDLE_ID", { default: "com.dhruva.mp3player" });
+const BUNDLE_ID = defineString("APPLE_BUNDLE_ID", { default: "com.novoralabs.mp3player" });
 // Your app's numeric App Store ID (App Store Connect → App Information →
 // "Apple ID"). Needed to verify PRODUCTION notifications. Fill it in once the
 // app exists in App Store Connect.
 const APP_APPLE_ID = defineString("APPLE_APP_APPLE_ID", { default: "" });
 
 // Your in-app purchase product IDs (must match StoreKit / App Store Connect).
+// Premium is a single one-time (non-consumable) purchase.
 const OUR_PRODUCTS = new Set([
-  "com.dhruva.mp3player.premium.monthly",
-  "com.dhruva.mp3player.premium.lifetime",
+  "com.novoralabs.mp3player.premium.lifetime",
 ]);
 
 // Notification types that always mean "no longer entitled".

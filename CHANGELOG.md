@@ -2,6 +2,19 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-10-24 — Premium is a single €9.99 lifetime purchase
+
+- Sonus stays free with ads. Premium is now one one-time purchase at €9.99. The €3/month
+  subscription is gone.
+- The product ID is now `com.novoralabs.mp3player.premium.lifetime`, matching the bundle ID. The
+  old `com.dhruva…` IDs were never created in App Store Connect.
+- The Buy button did nothing when the App Store returned no product, as in TestFlight before the
+  product exists. The paywall now loads the product again when it opens, retries on tap, and
+  explains what went wrong. It only shows a price that comes from the App Store.
+- The paywall's legal text now describes a one-time purchase, not a subscription.
+- Cloud Functions: purchase verification accepts only the new product ID, and its default bundle
+  ID is fixed to `com.novoralabs.mp3player`. The old default didn't match the app.
+
 ## 2026-10-24 — Fix "Audio session setup failed" on device; build 2
 
 - Playback on a real iPhone showed "Audio session setup failed." and nothing played. The audio

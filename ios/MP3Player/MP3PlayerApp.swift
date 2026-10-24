@@ -24,8 +24,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Re-check StoreKit entitlements every time the app comes to the
-        // foreground so a lapsed subscription brings ads back promptly (an
-        // expiration that happens while backgrounded won't always push an update).
+        // foreground so a refunded purchase brings ads back promptly (a
+        // revocation that happens while backgrounded won't always push an update).
         Task { @MainActor in await StoreManager.shared.refreshEntitlements() }
     }
 
