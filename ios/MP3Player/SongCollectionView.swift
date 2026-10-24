@@ -100,8 +100,9 @@ struct SongCollectionView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CollectionArtwork(collection: collection, songs: songs, size: 220)
-                .shadow(color: .black.opacity(0.45), radius: 22, y: 12)
+            CollectionArtwork(collection: collection, songs: songs, size: 232)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.hero, style: .continuous))
+                .shadow(color: .black.opacity(0.5), radius: 28, y: 16)
                 .frame(maxWidth: .infinity)
                 .padding(.top, 8)
                 .padding(.bottom, 12)
@@ -157,6 +158,22 @@ struct SongCollectionView: View {
 
             Spacer()
 
+            if songs.count > 1 {
+                Button {
+                    shell.shufflePlay(songs, context: context, player: player)
+                } label: {
+                    Image(systemName: "shuffle")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                        .symbolEffect(.bounce, value: shell.shuffleRequestCount)
+                        .frame(width: 48, height: 48)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.pressable)
+                .accessibilityLabel("Shuffle \(title)")
+                .padding(.trailing, 4)
+            }
+
             if !songs.isEmpty {
                 let isPlaying = shell.isPlaying(context, player: player)
                 Button {
@@ -166,9 +183,9 @@ struct SongCollectionView: View {
                         .font(.system(size: 22, weight: .bold))
                         .foregroundStyle(Theme.accentInk)
                         .contentTransition(.symbolEffect(.replace))
-                        .frame(width: 56, height: 56)
-                        .background(Theme.accent, in: Circle())
-                        .shadow(color: Theme.accent.opacity(0.3), radius: 12, y: 4)
+                        .frame(width: 58, height: 58)
+                        .background(Theme.playGradient, in: Circle())
+                        .shadow(color: Theme.accent.opacity(0.4), radius: 14, y: 5)
                 }
                 .buttonStyle(PressableButtonStyle(scale: 0.9))
                 .accessibilityLabel(isPlaying ? "Pause \(title)" : "Play \(title)")

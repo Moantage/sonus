@@ -18,34 +18,32 @@ struct PlaybackScrubber: View {
     }
 
     var body: some View {
-        VStack(spacing: 4) {
+        let isDragging = dragProgress != nil
+        VStack(spacing: 6) {
             GeometryReader { proxy in
-                let isDragging = dragProgress != nil
                 let width = proxy.size.width
+                let height: CGFloat = isDragging ? 10 : 5
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Theme.textPrimary.opacity(0.24))
-                        .frame(height: isDragging ? 6 : 4)
+                        .fill(Theme.textPrimary.opacity(0.2))
                     Capsule()
-                        .fill(Theme.textPrimary)
-                        .frame(width: max(width * progress, 4), height: isDragging ? 6 : 4)
-                    Circle()
-                        .fill(Theme.textPrimary)
-                        .frame(width: isDragging ? 16 : 12, height: isDragging ? 16 : 12)
-                        .offset(x: width * progress - (isDragging ? 8 : 6))
+                        .fill(isDragging ? Theme.accentLight : Theme.textPrimary)
+                        .frame(width: max(width * progress, height))
+                        .shadow(color: Theme.accent.opacity(isDragging ? 0.6 : 0), radius: 8)
                 }
+                .frame(height: height)
                 .frame(maxHeight: .infinity)
                 .contentShape(Rectangle())
                 .highPriorityGesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
-                            withAnimation(.easeOut(duration: 0.1)) {
+                            withAnimation(.interactiveSpring(response: 0.2, dampingFraction: 0.86)) {
                                 dragProgress = min(max(value.location.x / max(width, 1), 0), 1)
                             }
                         }
                         .onEnded { _ in
                             if let dragProgress { onSeek(dragProgress * duration) }
-                            withAnimation(.easeOut(duration: 0.15)) { dragProgress = nil }
+                            withAnimation(Theme.Motion.snappy) { dragProgress = nil }
                         }
                 )
             }
@@ -56,9 +54,10 @@ struct PlaybackScrubber: View {
                 Spacer()
                 Text("-" + max(duration - progress * duration, 0).mmssString)
             }
-            .font(.caption.monospacedDigit())
-            .foregroundStyle(Theme.textSubtle)
+            .font(.system(.caption, weight: isDragging ? .bold : .medium).monospacedDigit())
+            .foregroundStyle(isDragging ? Theme.textPrimary : Theme.textSubtle)
         }
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.6), trigger: isDragging)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Track position")
         .accessibilityValue("\(currentTime.mmssString) of \(duration.mmssString)")

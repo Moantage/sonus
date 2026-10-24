@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// The full-screen player. It grows out of the mini-player, and dragging it down (or the
-/// chevron) shrinks it back. The background is tinted from the artwork.
+/// chevron) shrinks it back. Behind it, the artwork glows and slowly drifts while music plays.
+/// Swiping the artwork sideways skips, like flicking through records.
 struct NowPlayingView: View {
     let namespace: Namespace.ID
 
@@ -11,6 +12,11 @@ struct NowPlayingView: View {
     @State private var dragOffset: CGFloat = 0
     @State private var showsContent = false
     @State private var sheet: PlayerSheet?
+    /// Sideways travel of the artwork while it's being swiped to skip.
+    @State private var artworkOffset: CGFloat = 0
+    /// Which way a drag on the artwork was locked to once it started moving.
+    @State private var artworkDragAxis: Axis?
+    @State private var skipCount = 0
 
     private enum PlayerSheet: Identifiable {
         case actions(Song)
@@ -28,6 +34,13 @@ struct NowPlayingView: View {
         }
     }
 
+    private var upNext: Song? {
+        guard let current = player.currentSong,
+              let index = player.activeQueue.firstIndex(where: { $0.id == current.id }),
+              index + 1 < player.activeQueue.count else { return nil }
+        return player.activeQueue[index + 1]
+    }
+
     var body: some View {
         ZStack {
             background
@@ -39,26 +52,30 @@ struct NowPlayingView: View {
                 Spacer(minLength: 12)
 
                 artwork
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, 4)
                     .layoutPriority(-1)
 
-                Spacer(minLength: 20)
+                Spacer(minLength: 24)
 
                 titleRow
-                    .padding(.bottom, 14)
+                    .padding(.bottom, 16)
 
                 PlaybackScrubber(
                     currentTime: player.currentTime,
                     duration: player.duration,
                     onSeek: { player.seek(to: $0) }
                 )
-                .padding(.bottom, 10)
+                .padding(.bottom, 8)
 
-                transport
-                    .padding(.bottom, 14)
+                PlayerTransport(hasNext: upNext != nil) { sheet = .controls }
+                    .padding(.bottom, 18)
 
-                bottomRow
-                    .padding(.bottom, 8)
+                HStack(spacing: 12) {
+                    RoutePickerButton()
+                        .frame(width: 44, height: 44)
+                    UpNextBar(upNext: upNext) { sheet = .queue }
+                }
+                .padding(.bottom, 8)
             }
             .padding(.horizontal, 24)
             .opacity(showsContent ? 1 : 0)
@@ -69,7 +86,7 @@ struct NowPlayingView: View {
         .padding(.bottom, -dragOffset)
         .gesture(dismissGesture)
         .onAppear {
-            withAnimation(.easeOut(duration: 0.25).delay(0.08)) { showsContent = true }
+            withAnimation(.easeOut(duration: 0.3).delay(0.08)) { showsContent = true }
         }
         .sheet(item: $sheet) { sheet in
             switch sheet {
@@ -83,6 +100,7 @@ struct NowPlayingView: View {
                 AdvancedControlsSheet()
             }
         }
+        .sensoryFeedback(.impact(weight: .medium), trigger: skipCount)
         .accessibilityAddTraits(.isModal)
         .accessibilityAction(.escape) { collapse() }
     }
@@ -90,23 +108,20 @@ struct NowPlayingView: View {
     // MARK: Background
 
     private var background: some View {
-        let tint = ArtworkPalette.backdrop(from: shell.artworkTint, brightness: 0.30...0.46)
-        return RoundedRectangle(cornerRadius: dragOffset > 0 ? 24 : 0, style: .continuous)
-            .fill(
-                LinearGradient(
-                    stops: [
-                        .init(color: tint, location: 0),
-                        .init(color: tint.opacity(0.55), location: 0.45),
-                        .init(color: Theme.backgroundBase, location: 1)
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
+        let shape = RoundedRectangle(cornerRadius: dragOffset > 0 ? 32 : 0, style: .continuous)
+        return shape
+            .fill(Theme.backgroundBase)
+            .overlay {
+                AmbientArtworkBackdrop(
+                    songID: player.currentSong?.id,
+                    image: player.artworkImage,
+                    tint: shell.artworkTint,
+                    isPlaying: player.isPlaying
                 )
-            )
-            .background(Theme.backgroundBase, in: RoundedRectangle(cornerRadius: dragOffset > 0 ? 24 : 0, style: .continuous))
+            }
+            .clipShape(shape)
             .matchedGeometryEffect(id: PlayerGeometry.background, in: namespace)
             .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.5), value: shell.artworkTint)
     }
 
     // MARK: Header
@@ -115,8 +130,10 @@ struct NowPlayingView: View {
         HStack(spacing: 8) {
             Button(action: collapse) {
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(Theme.textPrimary)
+                    .frame(width: 40, height: 40)
+                    .background(.white.opacity(0.1), in: Circle())
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
@@ -124,8 +141,9 @@ struct NowPlayingView: View {
             .accessibilityLabel("Close Now Playing")
 
             VStack(spacing: 1) {
-                Text("Playing from")
+                Text(shell.playContext.isShuffled ? "SHUFFLING FROM" : "PLAYING FROM")
                     .font(.system(.caption2, weight: .semibold))
+                    .tracking(1.2)
                     .foregroundStyle(Theme.textSubtle)
                 Text(shell.playContext.name)
                     .font(.system(.footnote, weight: .bold))
@@ -139,8 +157,10 @@ struct NowPlayingView: View {
                 if let song = player.currentSong { sheet = .actions(song) }
             } label: {
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(Theme.textPrimary)
+                    .frame(width: 40, height: 40)
+                    .background(.white.opacity(0.1), in: Circle())
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
@@ -158,15 +178,73 @@ struct NowPlayingView: View {
                 id: player.currentSong?.id ?? UUID(),
                 image: player.artworkImage,
                 size: side,
-                cornerRadius: Theme.Radius.card
+                cornerRadius: Theme.Radius.hero
             )
             .matchedGeometryEffect(id: PlayerGeometry.artwork, in: namespace)
-            .shadow(color: .black.opacity(0.45), radius: 24, y: 14)
-            .scaleEffect(player.isPlaying ? 1 : 0.9)
-            .animation(.spring(response: 0.45, dampingFraction: 0.75), value: player.isPlaying)
+            .shadow(color: Color(shell.artworkTint).opacity(0.45), radius: 40, y: 18)
+            .shadow(color: .black.opacity(0.4), radius: 16, y: 10)
+            .scaleEffect(player.isPlaying ? 1 : 0.88)
+            .animation(Theme.Motion.bounce, value: player.isPlaying)
+            .offset(x: artworkOffset)
+            .rotationEffect(.degrees(Double(artworkOffset / max(side, 1)) * 6))
+            .opacity(1 - min(abs(artworkOffset) / max(side, 1), 1) * 0.5)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(artworkGesture(width: side))
+            .onTapGesture(count: 2) { player.togglePlayback() }
         }
         .aspectRatio(1, contentMode: .fit)
+        .accessibilityElement()
+        .accessibilityLabel("Artwork")
+        .accessibilityHint("Swipe sideways to change songs, double-tap to play or pause")
+        .accessibilityAction { player.togglePlayback() }
+        .accessibilityAction(named: "Next track") { player.playNext() }
+        .accessibilityAction(named: "Previous track") { player.playPrevious() }
+    }
+
+    /// Horizontal drags skip with a record-flick feel; vertical drags close the player, as
+    /// they do everywhere else on this screen.
+    private func artworkGesture(width: CGFloat) -> some Gesture {
+        DragGesture(minimumDistance: 10)
+            .onChanged { value in
+                if artworkDragAxis == nil {
+                    artworkDragAxis = abs(value.translation.width) > abs(value.translation.height) ? .horizontal : .vertical
+                }
+                switch artworkDragAxis {
+                case .horizontal:
+                    let canGo = value.translation.width < 0 ? upNext != nil : true
+                    // Rubber-band when there's nowhere to go.
+                    artworkOffset = canGo ? value.translation.width : value.translation.width * 0.25
+                case .vertical:
+                    dismissChanged(value)
+                case nil:
+                    break
+                }
+            }
+            .onEnded { value in
+                defer { artworkDragAxis = nil }
+                guard artworkDragAxis == .horizontal else {
+                    dismissEnded(value)
+                    return
+                }
+                let travel = value.translation.width
+                let projected = value.predictedEndTranslation.width
+                let goesNext = (travel < -80 || projected < -240) && upNext != nil
+                let goesBack = travel > 80 || projected > 240
+                guard goesNext || goesBack else {
+                    withAnimation(Theme.Motion.bounce) { artworkOffset = 0 }
+                    return
+                }
+                let exit = (goesNext ? -1 : 1) * width * 1.2
+                withAnimation(.easeIn(duration: 0.16)) {
+                    artworkOffset = exit
+                } completion: {
+                    if goesNext { player.playNext() } else { player.playPrevious() }
+                    skipCount += 1
+                    artworkOffset = -exit * 0.6
+                    withAnimation(Theme.Motion.glide) { artworkOffset = 0 }
+                }
+            }
     }
 
     // MARK: Title
@@ -179,165 +257,61 @@ struct NowPlayingView: View {
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(2)
                 Text(player.currentSong?.displayArtist ?? "")
-                    .font(.body)
+                    .font(.system(.body, weight: .medium))
                     .foregroundStyle(Theme.textSubtle)
                     .lineLimit(1)
             }
+            .id(player.currentSong?.id)
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .offset(y: 8)),
+                removal: .opacity
+            ))
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .combine)
 
             Button {
                 if let song = player.currentSong { sheet = .addToPlaylist(song) }
             } label: {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 26, weight: .regular))
+                Image(systemName: "plus")
+                    .font(.system(size: 18, weight: .bold))
                     .foregroundStyle(Theme.textPrimary)
+                    .frame(width: 40, height: 40)
+                    .background(.white.opacity(0.12), in: Circle())
                     .frame(width: 44, height: 44)
             }
             .buttonStyle(.pressable)
             .accessibilityLabel("Add to playlist")
         }
-    }
-
-    // MARK: Transport
-
-    private var transport: some View {
-        HStack {
-            controlsButton
-            Spacer()
-            Button {
-                player.playPrevious()
-            } label: {
-                Image(systemName: "backward.end.fill")
-                    .font(.system(size: 30))
-                    .foregroundStyle(Theme.textPrimary)
-                    .frame(width: 56, height: 56)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.pressable)
-            .accessibilityLabel("Previous")
-            Spacer()
-            Button {
-                player.togglePlayback()
-            } label: {
-                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 30, weight: .semibold))
-                    .foregroundStyle(Theme.accentInk)
-                    .contentTransition(.symbolEffect(.replace))
-                    .frame(width: 72, height: 72)
-                    .background(Theme.playGradient, in: Circle())
-                    .shadow(color: Theme.accent.opacity(0.35), radius: 16, y: 6)
-            }
-            .buttonStyle(PressableButtonStyle(scale: 0.92))
-            .sensoryFeedback(.impact(weight: .medium), trigger: player.isPlaying)
-            .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
-            Spacer()
-            Button {
-                player.playNext()
-            } label: {
-                Image(systemName: "forward.end.fill")
-                    .font(.system(size: 30))
-                    .foregroundStyle(Theme.textPrimary)
-                    .frame(width: 56, height: 56)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.pressable)
-            .accessibilityLabel("Next")
-            Spacer()
-            repeatButton
-        }
-        .sensoryFeedback(.selection, trigger: player.currentSong?.id)
-    }
-
-    private var repeatButton: some View {
-        let isOn = player.repeatMode == .one
-        return Button {
-            player.cycleRepeatMode()
-        } label: {
-            VStack(spacing: 3) {
-                Image(systemName: player.repeatMode.iconName)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(isOn ? Theme.accent : Theme.textSubtle)
-                Circle()
-                    .fill(isOn ? Theme.accent : .clear)
-                    .frame(width: 4, height: 4)
-            }
-            .frame(width: 44, height: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.pressable)
-        .sensoryFeedback(.selection, trigger: player.repeatMode)
-        .accessibilityLabel("Repeat")
-        .accessibilityValue(isOn ? "Repeat this song" : "Off")
-    }
-
-    /// Playback speed, 15-second skips and the sleep timer.
-    private var controlsButton: some View {
-        Button {
-            sheet = .controls
-        } label: {
-            ZStack {
-                if player.playbackSpeed != 1 {
-                    Text(String(format: "%g×", player.playbackSpeed))
-                        .font(.system(.footnote, weight: .bold))
-                        .foregroundStyle(Theme.accent)
-                } else {
-                    Image(systemName: player.sleepTimerEndsAt == nil ? "slider.horizontal.3" : "moon.zzz.fill")
-                        .font(.system(size: 19, weight: .semibold))
-                        .foregroundStyle(player.sleepTimerEndsAt == nil ? Theme.textSubtle : Theme.accent)
-                }
-            }
-            .frame(width: 44, height: 44)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.pressable)
-        .accessibilityLabel("Playback controls")
-        .accessibilityHint("Speed, skip and sleep timer")
-    }
-
-    // MARK: Bottom row
-
-    private var bottomRow: some View {
-        HStack {
-            RoutePickerButton()
-                .frame(width: 44, height: 44)
-            Spacer()
-            Button {
-                sheet = .queue
-            } label: {
-                Image(systemName: "list.bullet")
-                    .font(.system(size: 19, weight: .semibold))
-                    .foregroundStyle(Theme.textSubtle)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.pressable)
-            .accessibilityLabel("Queue")
-        }
+        .animation(Theme.Motion.snappy, value: player.currentSong?.id)
     }
 
     // MARK: Dismiss
 
     private var dismissGesture: some Gesture {
         DragGesture(minimumDistance: 12)
-            .onChanged { value in
-                guard value.translation.height > 0,
-                      value.translation.height > abs(value.translation.width) else { return }
-                dragOffset = value.translation.height
-            }
-            .onEnded { value in
-                let shouldClose = value.translation.height > 140 || value.predictedEndTranslation.height > 420
-                if shouldClose, dragOffset > 0 {
-                    collapse()
-                } else {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { dragOffset = 0 }
-                }
-            }
+            .onChanged(dismissChanged)
+            .onEnded(dismissEnded)
+    }
+
+    private func dismissChanged(_ value: DragGesture.Value) {
+        guard value.translation.height > 0,
+              value.translation.height > abs(value.translation.width) else { return }
+        dragOffset = value.translation.height
+    }
+
+    private func dismissEnded(_ value: DragGesture.Value) {
+        let shouldClose = value.translation.height > 140 || value.predictedEndTranslation.height > 420
+        if shouldClose, dragOffset > 0 {
+            collapse()
+        } else {
+            withAnimation(Theme.Motion.snappy) { dragOffset = 0 }
+        }
     }
 
     private func collapse() {
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.88)) {
+        withAnimation(Theme.Motion.glide) {
             shell.isPlayerExpanded = false
+            dragOffset = 0
         }
     }
 }

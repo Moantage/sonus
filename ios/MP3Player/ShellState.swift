@@ -91,6 +91,8 @@ struct PlayContext: Equatable {
     let name: String
     /// Set when the songs belong to a playlist, so rows can offer "Remove from this playlist".
     var playlistID: Playlist.ID?
+    /// Started from a Shuffle button, so Now Playing says "Shuffling from".
+    var isShuffled = false
 
     static let library = PlayContext(id: "all", name: "Your Library")
     static let search = PlayContext(id: "search", name: "Search")
@@ -180,6 +182,26 @@ final class ShellState: ObservableObject {
         guard let first = songs.first else { return }
         play(first, in: songs, context: context, player: player)
     }
+
+    /// Plays `songs` in a random order from a random first song. Shuffle is a one-off order,
+    /// not a mode: playing the collection again starts it in order.
+    func shufflePlay(_ songs: [Song], context: PlayContext, player: AudioPlayerManager) {
+        var shuffled = songs.shuffled()
+        // Avoid starting with the song that's already playing when there's a choice.
+        if shuffled.count > 1, shuffled.first?.id == player.currentSong?.id {
+            shuffled.swapAt(0, 1)
+        }
+        guard let first = shuffled.first else { return }
+        player.play(song: first, in: shuffled)
+        var shuffledContext = context
+        shuffledContext.isShuffled = true
+        playContext = shuffledContext
+        playRequestCount += 1
+        shuffleRequestCount += 1
+    }
+
+    /// Bumped on every shuffle, for its own haptic and icon effects.
+    @Published private(set) var shuffleRequestCount = 0
 
     func isPlaying(_ context: PlayContext, player: AudioPlayerManager) -> Bool {
         player.isPlaying && playContext.id == context.id && player.currentSong != nil
