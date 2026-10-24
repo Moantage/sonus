@@ -85,7 +85,16 @@ struct LibraryView: View {
             } else {
                 VStack(spacing: 4) {
                     LibraryItemRow(collection: .allSongs, isPinned: true)
+                    if !libraryStore.songs.isEmpty {
+                        LibraryItemRow(collection: .recentlyAdded)
+                    }
+                    if libraryStore.songs.contains(where: \.isDownloadedLocally),
+                       libraryStore.songs.contains(where: { $0.remoteURL != nil }) {
+                        LibraryItemRow(collection: .downloaded)
+                    }
                     playlistRows
+                    // Always end on a way forward, so the page is never a dead end.
+                    createPlaylistRow
                 }
             }
         case .playlists:
@@ -125,12 +134,22 @@ struct LibraryView: View {
             HStack(spacing: 12) {
                 Image(systemName: "plus")
                     .font(.system(size: 26, weight: .light))
-                    .foregroundStyle(Theme.textSubtle)
+                    .foregroundStyle(Theme.accent)
                     .frame(width: 64, height: 64)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.artwork, style: .continuous))
-                Text("Create playlist")
-                    .font(.emberRowTitle)
-                    .foregroundStyle(Theme.textPrimary)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: Theme.Radius.artwork, style: .continuous)
+                            .strokeBorder(Theme.hairline, style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
+                    }
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Create playlist")
+                        .font(.emberRowTitle)
+                        .foregroundStyle(Theme.textPrimary)
+                    Text("Group songs for a mood, a trip, a workout")
+                        .font(.emberRowSubtitle)
+                        .foregroundStyle(Theme.textSubtle)
+                        .lineLimit(1)
+                }
                 Spacer(minLength: 0)
             }
             .contentShape(Rectangle())

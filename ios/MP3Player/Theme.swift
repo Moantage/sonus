@@ -55,11 +55,25 @@ enum Theme {
 
     enum Radius {
         /// Song and playlist artwork.
-        static let artwork: CGFloat = 6
+        static let artwork: CGFloat = 10
         /// Cards, the mini-player, fields.
-        static let card: CGFloat = 8
+        static let card: CGFloat = 14
         /// Larger tiles (Home shortcuts, banners).
-        static let tile: CGFloat = 12
+        static let tile: CGFloat = 20
+        /// The hero artwork on Now Playing and collection pages.
+        static let hero: CGFloat = 16
+    }
+
+    // MARK: Motion
+
+    /// One spring vocabulary, so every surface moves the same way.
+    enum Motion {
+        /// Taps, toggles, small state changes.
+        static let snappy = Animation.spring(response: 0.32, dampingFraction: 0.82)
+        /// Surfaces that travel: the player expanding, cards sliding.
+        static let glide = Animation.spring(response: 0.48, dampingFraction: 0.86)
+        /// Elastic returns after a drag.
+        static let bounce = Animation.spring(response: 0.38, dampingFraction: 0.68)
     }
 
     // MARK: Gradients

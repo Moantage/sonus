@@ -2,6 +2,26 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-10-24 — Ember redesign: generated covers, a living Now Playing, one-tap Shuffle
+
+- **Every song has a cover.** Songs without artwork get one drawn from their ID: a two-tone
+  gradient, soft light and a rings, waves, sunset or equaliser motif in one of eight Ember-family
+  palettes. The same song always gets the same cover.
+- **Now Playing comes alive.** The song's artwork glows behind the player as a blurred light that
+  drifts while music plays and holds still when paused or with Reduce Motion on. Swipe the artwork
+  left or right to skip, or double-tap it to play or pause. An "Up next" pill shows the next song
+  and opens the queue. The scrubber thickens and glows while you drag it. Previous and Next bounce
+  when tapped, and the header says "Shuffling from" after a shuffle.
+- **Shuffle everywhere.** A Shuffle all button on Home and a Shuffle button on every collection
+  and playlist page play the list in a random order.
+- **Home leads with a hero card**: what's playing, what played last, or the newest song, set on its
+  own blurred artwork with Play/Resume and Shuffle all. The top of Home takes on the featured song's
+  colour, and a line under the greeting sums up the library.
+- **Mini-player** is a lit floating pane with an amber progress line and a Next button.
+- **Your Library** always shows Recently added (plus Downloaded when there are downloads) and ends
+  with a Create playlist row, so it is never empty.
+- Softer corners, one shared spring vocabulary (`Theme.Motion`), and tab icons that bounce on tap.
+
 ## 2026-10-24 — Full-screen ads replace banners; high-quality audio is Premium again
 
 - Banner ads are gone from every screen. Free users now see one full-screen **app open** ad when

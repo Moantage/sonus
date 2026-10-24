@@ -17,7 +17,7 @@ struct MiniPlayerView: View {
     @State private var dragOffset: CGFloat = 0
     @State private var skipCount = 0
 
-    static let height: CGFloat = 60
+    static let height: CGFloat = 64
 
     var body: some View {
         ZStack {
@@ -33,26 +33,39 @@ struct MiniPlayerView: View {
 
     private func content(for song: Song) -> some View {
         HStack(spacing: 10) {
-            SongArtwork(id: song.id, image: player.artworkImage, size: 42, cornerRadius: 4)
+            SongArtwork(id: song.id, image: player.artworkImage, size: 46, cornerRadius: 8)
+                .shadow(color: .black.opacity(0.3), radius: 6, y: 3)
                 .matchedGeometryEffect(id: PlayerGeometry.artwork, in: namespace)
 
             titles(for: song)
 
             playPauseButton
+            nextButton
         }
         .padding(.leading, 9)
-        .padding(.trailing, 6)
+        .padding(.trailing, 4)
         .frame(maxHeight: .infinity)
         .background {
             RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
-                .fill(ArtworkPalette.backdrop(from: shell.artworkTint, brightness: 0.22...0.34))
+                .fill(ArtworkPalette.backdrop(from: shell.artworkTint, brightness: 0.24...0.36))
+                .overlay {
+                    // Top light, so the bar reads as a lit pane floating over the content.
+                    LinearGradient(colors: [.white.opacity(0.1), .clear], startPoint: .top, endPoint: .center)
+                }
                 .matchedGeometryEffect(id: PlayerGeometry.background, in: namespace)
         }
         .overlay(alignment: .bottom) {
             progressLine
-                .padding(.horizontal, 9)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 1)
         }
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
+                .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.45), radius: 18, y: 8)
+        .animation(.easeInOut(duration: 0.5), value: shell.artworkTint)
         .contentShape(Rectangle())
         .onTapGesture { expand() }
         .gesture(swipeGesture)
@@ -100,12 +113,28 @@ struct MiniPlayerView: View {
         .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
     }
 
+    private var nextButton: some View {
+        Button {
+            skipCount += 1
+            player.playNext()
+        } label: {
+            Image(systemName: "forward.fill")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(Theme.textPrimary)
+                .symbolEffect(.bounce.down, value: skipCount)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.pressable)
+        .accessibilityLabel("Next track")
+    }
+
     private var progressLine: some View {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
-                Capsule().fill(Theme.textPrimary.opacity(0.22))
+                Capsule().fill(Theme.textPrimary.opacity(0.18))
                 Capsule()
-                    .fill(Theme.textPrimary)
+                    .fill(Theme.accent)
                     .frame(width: proxy.size.width * min(max(player.progress, 0), 1))
             }
         }
@@ -138,7 +167,7 @@ struct MiniPlayerView: View {
     }
 
     private func expand() {
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+        withAnimation(Theme.Motion.glide) {
             shell.isPlayerExpanded = true
         }
     }

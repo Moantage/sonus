@@ -142,7 +142,7 @@ struct ContentView: View {
                 shell.popToRoot(tab)
             }
         }
-        .animation(.spring(response: 0.4, dampingFraction: 0.85), value: hasSong)
+        .animation(Theme.Motion.glide, value: hasSong)
         // The toast floats above the chrome so it never shifts the content's insets.
         .overlay(alignment: .top) {
             if let toast = shell.toast {
@@ -192,11 +192,15 @@ struct EmberTabBar: View {
     @Binding var selection: AppTab
     let onReselect: (AppTab) -> Void
 
+    /// Bumped per tab on every tap, so only the tapped icon bounces.
+    @State private var bounces: [AppTab: Int] = [:]
+
     var body: some View {
         HStack(spacing: 0) {
             ForEach(AppTab.allCases) { tab in
                 let isSelected = selection == tab
                 Button {
+                    bounces[tab, default: 0] += 1
                     if isSelected {
                         onReselect(tab)
                     } else {
@@ -206,11 +210,13 @@ struct EmberTabBar: View {
                     VStack(spacing: 4) {
                         Image(systemName: isSelected ? tab.selectedIcon : tab.icon)
                             .font(.system(size: 22, weight: isSelected ? .semibold : .regular))
+                            .symbolEffect(.bounce.down, value: bounces[tab, default: 0])
                             .frame(height: 26)
                         Text(tab.title)
                             .font(.system(size: 11, weight: .medium))
                     }
                     .foregroundStyle(isSelected ? Theme.accent : Theme.textSubtle)
+                    .animation(Theme.Motion.snappy, value: isSelected)
                     .frame(maxWidth: .infinity, minHeight: 50)
                     .contentShape(Rectangle())
                 }
@@ -244,6 +250,7 @@ struct ToastView: View {
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Theme.textPrimary, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+            .shadow(color: .black.opacity(0.35), radius: 14, y: 6)
             .padding(.horizontal, 8)
             .accessibilityAddTraits(.updatesFrequently)
             .onAppear {
