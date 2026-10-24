@@ -3,10 +3,10 @@ import StoreKit
 
 /// Product identifiers. These must EXACTLY match the product IDs you create in
 /// App Store Connect (and in the local MP3Player.storekit test file).
+/// Premium is a single one-time purchase; there is no subscription.
 enum PremiumProduct {
-    static let monthly = "com.dhruva.mp3player.premium.monthly"    // auto-renewable subscription, €3/mo
-    static let lifetime = "com.dhruva.mp3player.premium.lifetime"  // non-consumable, €11 once
-    static let all = [monthly, lifetime]
+    static let lifetime = "com.novoralabs.mp3player.premium.lifetime"  // non-consumable, €9.99 once
+    static let all = [lifetime]
 }
 
 /// StoreKit 2 in-app purchase manager.
@@ -20,7 +20,6 @@ enum PremiumProduct {
 final class StoreManager: ObservableObject {
     static let shared = StoreManager()
 
-    @Published private(set) var monthly: Product?
     @Published private(set) var lifetime: Product?
     @Published private(set) var isPremium = false
     @Published private(set) var hasLifetime = false
@@ -52,15 +51,12 @@ final class StoreManager: ObservableObject {
         defer { isLoadingProducts = false }
         do {
             let products = try await Product.products(for: PremiumProduct.all)
-            for product in products {
-                switch product.id {
-                case PremiumProduct.monthly:  monthly = product
-                case PremiumProduct.lifetime: lifetime = product
-                default: break
-                }
-            }
+            lifetime = products.first { $0.id == PremiumProduct.lifetime }
+            // An unknown ID comes back as an empty list, not an error (e.g. the product
+            // isn't set up in App Store Connect yet), so check for it explicitly.
+            lastError = lifetime == nil ? StoreError.productsUnavailable.errorDescription : nil
         } catch {
-            lastError = "Couldn't load subscription options. Please try again."
+            lastError = StoreError.productsUnavailable.errorDescription
         }
     }
 
@@ -69,6 +65,7 @@ final class StoreManager: ObservableObject {
     enum PurchaseOutcome { case success, pending, cancelled, failed }
 
     func purchase(_ product: Product) async -> PurchaseOutcome {
+        lastError = nil
         do {
             // Attach the user's appAccountToken so the App Store server
             // notification can be linked back to this account.
@@ -110,7 +107,7 @@ final class StoreManager: ObservableObject {
     // MARK: - Entitlements
 
     /// Recomputes premium status from the user's current, verified entitlements.
-    /// Expired subscriptions and revoked purchases are automatically excluded.
+    /// Revoked (refunded) purchases are excluded.
     func refreshEntitlements() async {
         var premium = false
         var lifetimeOwned = false
@@ -156,8 +153,15 @@ final class StoreManager: ObservableObject {
 
     enum StoreError: LocalizedError {
         case failedVerification
+        case productsUnavailable
+
         var errorDescription: String? {
-            "We couldn't verify this purchase with the App Store."
+            switch self {
+            case .failedVerification:
+                "We couldn't verify this purchase with the App Store."
+            case .productsUnavailable:
+                "Premium isn't available from the App Store right now. Check your connection and try again."
+            }
         }
     }
 }

@@ -11,7 +11,7 @@ import AppTrackingTransparency
 ///   • one **interstitial** after every 20 minutes of listening, shown at the next song change
 ///     (never mid-song) while the app is in the foreground. Music pauses for the ad and resumes
 ///     after it.
-/// A Premium subscription or the lifetime purchase removes both (see `AdGate`). There are no
+/// The lifetime Premium purchase removes both (see `AdGate`). There are no
 /// banner ads.
 ///
 /// Real AdMob identifiers are never committed. They come from build settings:
@@ -86,10 +86,9 @@ final class AdsManager {
 /// SINGLE SOURCE OF TRUTH for whether ads should be hidden.
 ///
 /// Ads are suppressed **only** by a VERIFIED premium entitlement:
-///   • `StoreManager.isPremium` — an active StoreKit entitlement (auto-renewable
-///     subscription that hasn't expired, or a lifetime non-consumable). Apple
-///     verifies this cryptographically on-device via `Transaction.currentEntitlements`,
-///     and it is automatically dropped when a subscription lapses → ads return.
+///   • `StoreManager.isPremium` — the lifetime non-consumable StoreKit entitlement.
+///     Apple verifies it cryptographically on-device via `Transaction.currentEntitlements`,
+///     and it is dropped if the purchase is refunded → ads return.
 ///
 /// A manually-set Firestore `isPremium` flag is deliberately NOT consulted here:
 /// it is not a verified purchase, so it must NOT remove ads. If/when you add

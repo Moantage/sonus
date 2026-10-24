@@ -1,8 +1,8 @@
 import SwiftUI
 import StoreKit
 
-/// Premium upgrade paywall: what's free with an account vs. what Premium adds, plus the two
-/// purchase options (€3/month subscription or €11 lifetime).
+/// Premium upgrade paywall: what's free with an account vs. what Premium adds, plus the one
+/// purchase option (a one-time lifetime purchase).
 ///
 /// Free with an account: your sources, streaming and offline downloads. Premium: high-quality
 /// audio, profile banners, sync across devices, and ad-free listening while ads exist.
@@ -58,6 +58,10 @@ struct PaywallView: View {
         .presentationBackground(Theme.backgroundBase)
         .onChange(of: store.isPremium) { _, isPremium in
             if isPremium { dismiss() }   // unlocked — close the paywall
+        }
+        .task {
+            // The launch-time load may have failed (offline, App Store hiccup); try again.
+            if store.lifetime == nil { await store.loadProducts() }
         }
     }
 
@@ -168,24 +172,13 @@ struct PaywallView: View {
                 PlanStyle(
                     title: "Lifetime",
                     subtitle: "One-time payment · yours forever",
-                    price: store.lifetime?.displayPrice ?? "€11",
+                    // Only show a price the App Store gave us; never a guessed one.
+                    price: store.lifetime?.displayPrice ?? "—",
                     cadence: nil,
-                    badge: "Best value"
+                    badge: "No subscription"
                 )
             ) {
-                if let product = store.lifetime { buy(product) }
-            }
-
-            planButton(
-                PlanStyle(
-                    title: "Monthly",
-                    subtitle: "Auto-renews · cancel anytime",
-                    price: store.monthly?.displayPrice ?? "€3",
-                    cadence: "/mo",
-                    badge: nil
-                )
-            ) {
-                if let product = store.monthly { buy(product) }
+                buyLifetime()
             }
 
             Button("Restore purchases") {
@@ -268,9 +261,8 @@ struct PaywallView: View {
             }
 
             Text(
-                "The Monthly plan is an auto-renewable subscription. Payment is charged to your Apple ID, and it renews "
-                    + "automatically unless cancelled at least 24 hours before the end of the period. Manage or cancel "
-                    + "anytime in your App Store account settings. Lifetime is a one-time purchase."
+                "Premium is a one-time purchase charged to your Apple ID. There's no subscription and nothing "
+                    + "renews. Use Restore purchases to unlock it again on another device or after reinstalling."
             )
             .font(.caption2)
             .foregroundStyle(Theme.textMuted)
@@ -304,6 +296,25 @@ struct PaywallView: View {
     }
 
     // MARK: - Actions
+
+    /// Buys the lifetime product, loading it first if the App Store hadn't returned it yet.
+    private func buyLifetime() {
+        if let product = store.lifetime {
+            buy(product)
+            return
+        }
+        errorMessage = nil
+        purchasing = true
+        Task {
+            await store.loadProducts()
+            purchasing = false
+            if let product = store.lifetime {
+                buy(product)
+            } else {
+                errorMessage = store.lastError ?? StoreManager.StoreError.productsUnavailable.errorDescription
+            }
+        }
+    }
 
     private func buy(_ product: Product) {
         errorMessage = nil
