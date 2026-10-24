@@ -6,7 +6,8 @@
 // Anything set in Secrets.xcconfig overrides the defaults here.
 
 ADMOB_APP_ID = ca-app-pub-3940256099942544~1458002511
-ADMOB_BANNER_UNIT_ID = ca-app-pub-3940256099942544/2435281174
+ADMOB_APP_OPEN_UNIT_ID = ca-app-pub-3940256099942544/5575463023
+ADMOB_INTERSTITIAL_UNIT_ID = ca-app-pub-3940256099942544/4411468910
 GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.replace-me
 
 #include? "Secrets.xcconfig"

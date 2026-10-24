@@ -2,6 +2,24 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-10-24 — Full-screen ads replace banners; high-quality audio is Premium again
+
+- Banner ads are gone from every screen. Free users now see one full-screen **app open** ad when
+  Sonus launches, and one **interstitial** after every 20 minutes of listening, shown at the next
+  song change (music pauses for the ad and resumes after). A Premium subscription or the lifetime
+  purchase removes both. New build settings: `ADMOB_APP_OPEN_UNIT_ID`, `ADMOB_INTERSTITIAL_UNIT_ID`
+  (Google test IDs by default); `ADMOB_BANNER_UNIT_ID` is no longer used.
+- The App Tracking Transparency prompt now actually appears (it was requested from an app-delegate
+  callback that SwiftUI never calls). It's asked once the signed-in app is on screen; that launch
+  skips the app open ad.
+- The launch screen is Ember graphite instead of white, and the app is named "Sonus" on the home
+  screen and in system prompts (it said "MP3 Player").
+- New app icon: the owner's amber saxophone "Sonus" artwork, at every size (flattened to an opaque
+  image, as the App Store requires).
+- Per the owner's decision, high-quality audio output is back behind Premium: Premium users get the
+  toggle in Profile, everyone else sees a locked row that opens the paywall. The paywall lists it.
+- Advanced playback controls (speed, 15-second skip, sleep timer) stay free.
+
 ## 2026-10-12 — Player reports streams that fail to load
 
 When a stream couldn't load (the server is down, or the phone is offline and the song isn't

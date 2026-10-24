@@ -4,8 +4,8 @@ import StoreKit
 /// Premium upgrade paywall: what's free with an account vs. what Premium adds, plus the two
 /// purchase options (€3/month subscription or €11 lifetime).
 ///
-/// Free with an account: your sources, streaming and offline downloads. Premium: profile
-/// banners, sync across devices, and ad-free listening while ads exist.
+/// Free with an account: your sources, streaming and offline downloads. Premium: high-quality
+/// audio, profile banners, sync across devices, and ad-free listening while ads exist.
 struct PaywallView: View {
     @EnvironmentObject private var store: StoreManager
     @Environment(\.dismiss) private var dismiss
@@ -25,6 +25,7 @@ struct PaywallView: View {
         Feature(name: "Your music sources", icon: "externaldrive.connected.to.line.below", isFree: true),
         Feature(name: "Streaming", icon: "dot.radiowaves.left.and.right", isFree: true),
         Feature(name: "Offline downloads", icon: "arrow.down.circle", isFree: true),
+        Feature(name: "High-quality audio", icon: "waveform", isFree: false),
         Feature(name: "Profile banners", icon: "photo", isFree: false),
         Feature(name: "Sync across devices", icon: "arrow.triangle.2.circlepath", isFree: false),
         Feature(name: "Ad-free listening", icon: "speaker.slash", isFree: false)
@@ -77,7 +78,7 @@ struct PaywallView: View {
                 .foregroundStyle(Theme.textPrimary)
                 .accessibilityAddTraits(.isHeader)
 
-            Text("Make Sonus yours: profile banners, your library on every device, and no ads.")
+            Text("Make Sonus yours: high-quality audio, profile banners, your library on every device, and no ads.")
                 .font(.body)
                 .foregroundStyle(Theme.textSubtle)
                 .multilineTextAlignment(.center)

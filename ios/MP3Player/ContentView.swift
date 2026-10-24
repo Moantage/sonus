@@ -9,6 +9,7 @@ struct ContentView: View {
     @EnvironmentObject private var store: StoreManager
 
     @StateObject private var shell = ShellState()
+    @StateObject private var ads = FullScreenAdController()
     @Namespace private var playerNamespace
     /// The mini-player and tab bar step aside while the keyboard is up.
     @State private var isKeyboardVisible = false
@@ -21,7 +22,6 @@ struct ContentView: View {
 
             VStack(spacing: 0) {
                 tabs
-                    .bannerAds(adsSuppressed: AdGate.adsSuppressed(store: store))
                 if !isKeyboardVisible {
                     bottomChrome
                 }
@@ -65,6 +65,11 @@ struct ContentView: View {
         }
         .task {
             player.syncLibrary(with: libraryStore.songs)
+            ads.attach(player: player, store: store)
+            await ads.handleLaunch()
+        }
+        .onChange(of: player.currentSong?.id) { _, _ in
+            ads.songDidChange()
         }
         .onChange(of: libraryStore.songs) { _, songs in
             player.syncLibrary(with: songs)
@@ -156,8 +161,8 @@ struct ContentView: View {
                 startPoint: .top,
                 endPoint: .bottom
             )
-            // Fade the content above into the chrome, but never over an ad banner.
-            .padding(.top, AdGate.adsSuppressed(store: store) ? -24 : 0)
+            // Fade the content above into the chrome.
+            .padding(.top, -24)
             .ignoresSafeArea(edges: .bottom)
             .allowsHitTesting(false)
         }

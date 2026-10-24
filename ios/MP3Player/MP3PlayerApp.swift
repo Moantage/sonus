@@ -23,7 +23,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        AdsManager.shared.requestTrackingAuthorizationIfNeeded()
         // Re-check StoreKit entitlements every time the app comes to the
         // foreground so a lapsed subscription brings ads back promptly (an
         // expiration that happens while backgrounded won't always push an update).
@@ -74,7 +73,7 @@ struct MP3PlayerApp: App {
 
     /// FEATURE ACCESS — more lenient. StoreKit entitlement OR the Firestore flag
     /// (which lets you grant premium features via promo/support/console). This is
-    /// intentionally separate from ad gating and must never feed `bannerAds`.
+    /// intentionally separate from ad gating and must never feed `AdGate`.
     private var premiumFeaturesUnlocked: Bool {
         store.isPremium || authManager.currentUser?.isPremium == true
     }
