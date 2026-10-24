@@ -14,6 +14,8 @@ Every change merged into `main`, newest first. Each entry has a date, a title an
   skips the app open ad.
 - The launch screen is Ember graphite instead of white, and the app is named "Sonus" on the home
   screen and in system prompts (it said "MP3 Player").
+- New app icon: the owner's amber saxophone "Sonus" artwork, at every size (flattened to an opaque
+  image, as the App Store requires).
 - Per the owner's decision, high-quality audio output is back behind Premium: Premium users get the
   toggle in Profile, everyone else sees a locked row that opens the paywall. The paywall lists it.
 - Advanced playback controls (speed, 15-second skip, sleep timer) stay free.
