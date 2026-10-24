@@ -7,7 +7,6 @@ struct NowPlayingView: View {
 
     @EnvironmentObject private var player: AudioPlayerManager
     @EnvironmentObject private var shell: ShellState
-    @EnvironmentObject private var store: StoreManager
 
     @State private var dragOffset: CGFloat = 0
     @State private var showsContent = false
@@ -63,7 +62,6 @@ struct NowPlayingView: View {
             }
             .padding(.horizontal, 24)
             .opacity(showsContent ? 1 : 0)
-            .bannerAds(adsSuppressed: AdGate.adsSuppressed(store: store))
         }
         // Moving the frame (instead of `.offset`) keeps the shrink animation starting from where
         // the finger let go.
