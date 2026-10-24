@@ -2,6 +2,12 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-10-24 — High-quality audio is a Premium feature again
+
+- Per the owner's decision, high-quality audio output is back behind Premium: Premium users get the
+  toggle in Profile, everyone else sees a locked row that opens the paywall. The paywall lists it.
+- Advanced playback controls (speed, 15-second skip, sleep timer) stay free.
+
 ## 2026-10-12 — Player reports streams that fail to load
 
 When a stream couldn't load (the server is down, or the phone is offline and the song isn't

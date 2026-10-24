@@ -171,7 +171,7 @@ struct ProfileView: View {
                     Text("Go Premium")
                         .font(.system(.headline, weight: .bold))
                         .foregroundStyle(Theme.textPrimary)
-                    Text("Profile banners, sync across devices and no ads")
+                    Text("High-quality audio, profile banners, sync and no ads")
                         .font(.footnote)
                         .foregroundStyle(Theme.textSubtle)
                 }
@@ -201,15 +201,6 @@ extension ProfileView {
 
     private var playbackSection: some View {
         SettingsSection(title: "Playback") {
-            Toggle(isOn: Binding(
-                get: { player.highQualityAudioEnabled },
-                set: { player.setHighQualityAudio($0) }
-            )) {
-                SettingsLabel(icon: "waveform", title: "High-quality audio", detail: "Best output for AirPlay and Bluetooth")
-            }
-            .tint(Theme.accent)
-            .frame(minHeight: 52)
-
             SettingsRow(icon: "slider.horizontal.3", title: "Playback controls", detail: "Speed, skip and sleep timer") {
                 showPlaybackControls = true
             }
@@ -229,6 +220,26 @@ extension ProfileView {
 
     private var premiumSection: some View {
         SettingsSection(title: "Premium") {
+            if isPremium {
+                Toggle(isOn: Binding(
+                    get: { player.highQualityAudioEnabled },
+                    set: { player.setHighQualityAudio($0) }
+                )) {
+                    SettingsLabel(icon: "waveform", title: "High-quality audio", detail: "Best output for AirPlay and Bluetooth")
+                }
+                .tint(Theme.accent)
+                .frame(minHeight: 52)
+            } else {
+                SettingsRow(
+                    icon: "waveform",
+                    title: "High-quality audio",
+                    detail: "Best output for AirPlay and Bluetooth",
+                    isLocked: true
+                ) {
+                    showPaywall = true
+                }
+            }
+
             SettingsRow(
                 icon: "photo",
                 title: "Profile banner",
