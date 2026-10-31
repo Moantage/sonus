@@ -2,6 +2,15 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-10-31 — Build 3 for TestFlight
+
+- Raises `CURRENT_PROJECT_VERSION` from 2 to 3. TestFlight build 1.0 (3) was uploaded from `main`
+  at 44f7e9c with this bump, signed with team P7S9BC8T7P (dhruvabisht.work@proton.me).
+- This is the first TestFlight build with the owner's saxophone app icon (from #8). Testers who
+  still see the old blue icon in notifications should delete the app and reinstall it, because
+  iOS caches app icons.
+- The next upload needs build 4.
+
 ## 2026-10-25 — Premium is a single €9.99 lifetime purchase
 
 - Sonus stays free with ads. Premium is now one one-time purchase at €9.99. The €3/month
