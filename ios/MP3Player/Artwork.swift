@@ -197,13 +197,17 @@ struct GenerativeCover: View {
                 let radius = side * random.next(in: 0.2...0.3)
                 let horizon = side * random.next(in: 0.58...0.7)
                 let center = CGPoint(x: side * random.next(in: 0.35...0.65), y: horizon)
-                var sun = Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
-                sun = sun.intersection(Path(CGRect(x: 0, y: 0, width: size.width, height: horizon)))
-                context.fill(sun, with: .linearGradient(
-                    Gradient(colors: [glow, glow.opacity(0.55)]),
-                    startPoint: CGPoint(x: center.x, y: center.y - radius),
-                    endPoint: CGPoint(x: center.x, y: horizon)
-                ))
+                let sun = Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
+                // Only the half above the horizon. Clipping (iOS 15) instead of
+                // `Path.intersection` (iOS 17) draws the same shape.
+                context.drawLayer { layer in
+                    layer.clip(to: Path(CGRect(x: 0, y: 0, width: size.width, height: horizon)))
+                    layer.fill(sun, with: .linearGradient(
+                        Gradient(colors: [glow, glow.opacity(0.55)]),
+                        startPoint: CGPoint(x: center.x, y: center.y - radius),
+                        endPoint: CGPoint(x: center.x, y: horizon)
+                    ))
+                }
                 for stripe in 0..<4 {
                     let y = horizon + side * 0.05 * CGFloat(stripe + 1)
                     let width = side * (0.5 - CGFloat(stripe) * 0.08)

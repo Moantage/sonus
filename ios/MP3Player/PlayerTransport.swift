@@ -12,58 +12,60 @@ struct PlayerTransport: View {
     @State private var nextTapCount = 0
 
     var body: some View {
-        HStack {
+        // 44 + 60 + 76 + 60 + 44 pt needs 284 pt; a 4-inch screen has about 280, so the compact
+        // metrics shrink the middle three.
+        HStack(spacing: 0) {
             controlsButton
-            Spacer()
+            Spacer(minLength: 0)
             Button {
                 previousTapCount += 1
                 player.playPrevious()
             } label: {
                 Image(systemName: "backward.fill")
-                    .font(.system(size: 32))
+                    .font(.system(size: ScreenMetrics.skipIcon))
                     .foregroundStyle(Theme.textPrimary)
-                    .symbolEffect(.bounce.down, value: previousTapCount)
-                    .frame(width: 60, height: 60)
+                    .symbolBounce(value: previousTapCount, down: true)
+                    .frame(width: ScreenMetrics.skipButton, height: ScreenMetrics.skipButton)
                     .contentShape(Rectangle())
             }
             .buttonStyle(PressableButtonStyle(scale: 0.86))
             .accessibilityLabel("Previous")
-            Spacer()
+            Spacer(minLength: 0)
             Button {
                 player.togglePlayback()
             } label: {
                 Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 32, weight: .semibold))
+                    .font(.system(size: ScreenMetrics.playIcon, weight: .semibold))
                     .foregroundStyle(Theme.accentInk)
-                    .contentTransition(.symbolEffect(.replace))
-                    .frame(width: 76, height: 76)
+                    .symbolReplaceTransition()
+                    .frame(width: ScreenMetrics.playButton, height: ScreenMetrics.playButton)
                     .background(Theme.playGradient, in: Circle())
                     .overlay(Circle().strokeBorder(.white.opacity(0.25), lineWidth: 1))
                     .shadow(color: Theme.accent.opacity(player.isPlaying ? 0.5 : 0.25), radius: player.isPlaying ? 22 : 12, y: 6)
                     .animation(Theme.Motion.snappy, value: player.isPlaying)
             }
             .buttonStyle(PressableButtonStyle(scale: 0.9))
-            .sensoryFeedback(.impact(weight: .medium), trigger: player.isPlaying)
+            .haptic(.medium, trigger: player.isPlaying)
             .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
-            Spacer()
+            Spacer(minLength: 0)
             Button {
                 nextTapCount += 1
                 player.playNext()
             } label: {
                 Image(systemName: "forward.fill")
-                    .font(.system(size: 32))
+                    .font(.system(size: ScreenMetrics.skipIcon))
                     .foregroundStyle(!hasNext ? Theme.textMuted : Theme.textPrimary)
-                    .symbolEffect(.bounce.down, value: nextTapCount)
-                    .frame(width: 60, height: 60)
+                    .symbolBounce(value: nextTapCount, down: true)
+                    .frame(width: ScreenMetrics.skipButton, height: ScreenMetrics.skipButton)
                     .contentShape(Rectangle())
             }
             .buttonStyle(PressableButtonStyle(scale: 0.86))
             .disabled(!hasNext)
             .accessibilityLabel("Next")
-            Spacer()
+            Spacer(minLength: 0)
             repeatButton
         }
-        .sensoryFeedback(.selection, trigger: player.currentSong?.id)
+        .haptic(.selection, trigger: player.currentSong?.id)
     }
 
     private var repeatButton: some View {
@@ -75,7 +77,7 @@ struct PlayerTransport: View {
                 Image(systemName: player.repeatMode.iconName)
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(isOn ? Theme.accent : Theme.textSubtle)
-                    .contentTransition(.symbolEffect(.replace))
+                    .symbolReplaceTransition()
                 Circle()
                     .fill(isOn ? Theme.accent : .clear)
                     .frame(width: 4, height: 4)
@@ -84,7 +86,7 @@ struct PlayerTransport: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.pressable)
-        .sensoryFeedback(.selection, trigger: player.repeatMode)
+        .haptic(.selection, trigger: player.repeatMode)
         .accessibilityLabel("Repeat")
         .accessibilityValue(isOn ? "Repeat this song" : "Off")
     }
@@ -95,7 +97,7 @@ struct PlayerTransport: View {
             ZStack {
                 if player.playbackSpeed != 1 {
                     Text(String(format: "%g×", player.playbackSpeed))
-                        .font(.system(.footnote, weight: .bold))
+                        .font(.system(.footnote).weight(.bold))
                         .foregroundStyle(Theme.accent)
                 } else {
                     Image(systemName: player.sleepTimerEndsAt == nil ? "slider.horizontal.3" : "moon.zzz.fill")
@@ -128,7 +130,7 @@ struct UpNextBar: View {
                             .tracking(1)
                             .foregroundStyle(Theme.textSubtle)
                         Text(upNext.title)
-                            .font(.system(.footnote, weight: .semibold))
+                            .font(.system(.footnote).weight(.semibold))
                             .foregroundStyle(Theme.textPrimary)
                             .lineLimit(1)
                     }
@@ -139,7 +141,7 @@ struct UpNextBar: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(Theme.textSubtle)
                     Text("Last song in the queue")
-                        .font(.system(.footnote, weight: .semibold))
+                        .font(.system(.footnote).weight(.semibold))
                         .foregroundStyle(Theme.textSubtle)
                         .lineLimit(1)
                 }

@@ -106,7 +106,11 @@ struct PlayContext: Equatable {
 /// overlay, and transient UI like toasts. Playback itself stays in `AudioPlayerManager`.
 @MainActor
 final class ShellState: ObservableObject {
-    @Published var selectedTab: AppTab = .home
+    @Published var selectedTab: AppTab = .home {
+        didSet { visitedTabs.insert(selectedTab) }
+    }
+    /// Tabs opened at least once. The iOS 15 shell only builds these.
+    @Published private(set) var visitedTabs: Set<AppTab> = [.home]
     @Published var paths: [AppTab: [Route]] = [.home: [], .search: [], .library: []]
 
     @Published var isPlayerExpanded = false
@@ -215,7 +219,7 @@ final class ShellState: ObservableObject {
         toastTask?.cancel()
         withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) { toast = message }
         toastTask = Task { [weak self] in
-            try? await Task.sleep(for: .seconds(2.2))
+            try? await Task.sleep(seconds: 2.2)
             guard !Task.isCancelled else { return }
             withAnimation(.easeOut(duration: 0.25)) { self?.toast = nil }
         }

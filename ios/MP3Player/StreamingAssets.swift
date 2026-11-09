@@ -192,7 +192,18 @@ enum PlayerAssetFactory {
         var options: [String: Any] = [AVURLAssetPreferPreciseDurationAndTimingKey: false]
         if let mimeType = AudioFileType.mimeType(forExtension: fileExtension) {
             // Some hosts label audio as application/octet-stream; the file type is more reliable.
-            options[AVURLAssetOverrideMIMETypeKey] = mimeType
+            if #available(iOS 17.0, *) {
+                options[AVURLAssetOverrideMIMETypeKey] = mimeType
+            } else if let contentType = AudioFileType.uniformType(forExtension: fileExtension) {
+                // iOS 15 and 16 can't override the MIME type, so the stream goes through the loader,
+                // which reports the file type itself. No credentials: this source doesn't use any.
+                let made = AuthorizedResourceLoader.makeAsset(
+                    for: url, client: sources.httpClient, authorization: nil, contentType: contentType
+                )
+                if let made {
+                    return PreparedAsset(asset: made.asset, loader: made.loader, isLocal: false)
+                }
+            }
         }
         return PreparedAsset(asset: AVURLAsset(url: url, options: options), loader: nil, isLocal: false)
     }
