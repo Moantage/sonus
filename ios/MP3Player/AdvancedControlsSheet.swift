@@ -11,8 +11,8 @@ struct AdvancedControlsSheet: View {
     private let sleepPresets = [5, 15, 30, 45, 60]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
+        CompatNavigationStack {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
                     speedSection
                     skipSection
@@ -20,7 +20,6 @@ struct AdvancedControlsSheet: View {
                 }
                 .padding(20)
             }
-            .scrollIndicators(.hidden)
             .background(Theme.backgroundElevated)
             .navigationTitle("Playback controls")
             .navigationBarTitleDisplayMode(.inline)
@@ -30,17 +29,14 @@ struct AdvancedControlsSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Theme.backgroundElevated)
-        .presentationCornerRadius(20)
+        .emberSheet(detents: [.medium, .large], showsGrabber: true, background: Theme.backgroundElevated, cornerRadius: 20)
     }
 
     // MARK: - Speed
 
     private var speedSection: some View {
         card(title: "Playback speed", systemImage: "speedometer") {
-            ScrollView(.horizontal) {
+            ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(AudioPlayerManager.availableSpeeds, id: \.self) { speed in
                         FilterPill(title: speedLabel(speed), isSelected: abs(player.playbackSpeed - speed) < 0.001) {
@@ -49,8 +45,7 @@ struct AdvancedControlsSheet: View {
                     }
                 }
             }
-            .scrollIndicators(.hidden)
-            .sensoryFeedback(.selection, trigger: player.playbackSpeed)
+            .haptic(.selection, trigger: player.playbackSpeed)
         }
     }
 
@@ -76,14 +71,14 @@ struct AdvancedControlsSheet: View {
         } label: {
             VStack(spacing: 6) {
                 Image(systemName: icon).font(.system(size: 22, weight: .semibold))
-                Text(label).font(.system(.caption, weight: .semibold))
+                Text(label).font(.system(.caption).weight(.semibold))
             }
             .foregroundStyle(Theme.textPrimary)
             .frame(maxWidth: .infinity, minHeight: 66)
             .background(Theme.surfaceRaised, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
         }
         .buttonStyle(PressableButtonStyle(scale: 0.96))
-        .sensoryFeedback(.impact(weight: .light), trigger: skipCount)
+        .haptic(.light, trigger: skipCount)
     }
 
     // MARK: - Sleep timer
@@ -95,7 +90,7 @@ struct AdvancedControlsSheet: View {
                     TimelineView(.periodic(from: .now, by: 1)) { context in
                         let remaining = max(0, endsAt.timeIntervalSince(context.date))
                         Text("Pausing in \(remaining.mmssString)")
-                            .font(.system(.title3, weight: .bold))
+                            .font(.system(.title3).weight(.bold))
                             .foregroundStyle(Theme.accent)
                             .monospacedDigit()
                     }
@@ -107,7 +102,7 @@ struct AdvancedControlsSheet: View {
                 .frame(maxWidth: .infinity)
             } else {
                 VStack(spacing: 14) {
-                    ScrollView(.horizontal) {
+                    ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(sleepPresets, id: \.self) { minutes in
                                 FilterPill(title: "\(minutes) min", isSelected: sleepMinutes == minutes) {
@@ -116,7 +111,6 @@ struct AdvancedControlsSheet: View {
                             }
                         }
                     }
-                    .scrollIndicators(.hidden)
 
                     PrimaryButton(title: "Start timer") {
                         player.setSleepTimer(minutes: sleepMinutes)
@@ -124,7 +118,7 @@ struct AdvancedControlsSheet: View {
                 }
             }
         }
-        .sensoryFeedback(.success, trigger: player.sleepTimerEndsAt) { _, new in new != nil }
+        .haptic(.success, trigger: player.sleepTimerEndsAt) { new in new != nil }
     }
 
     // MARK: - Card
@@ -132,7 +126,7 @@ struct AdvancedControlsSheet: View {
     private func card(title: String, systemImage: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             Label(title, systemImage: systemImage)
-                .font(.system(.headline, weight: .bold))
+                .font(.system(.headline).weight(.bold))
                 .foregroundStyle(Theme.textPrimary)
                 .accessibilityAddTraits(.isHeader)
             content()

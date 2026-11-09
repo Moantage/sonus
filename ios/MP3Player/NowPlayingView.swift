@@ -45,30 +45,31 @@ struct NowPlayingView: View {
         ZStack {
             background
 
+            // On a 4-inch screen every row tightens up so the artwork keeps most of the width.
             VStack(spacing: 0) {
                 header
                     .padding(.top, 4)
 
-                Spacer(minLength: 12)
+                Spacer(minLength: ScreenMetrics.isCompact ? 6 : 12)
 
                 artwork
                     .padding(.horizontal, 4)
                     .layoutPriority(-1)
 
-                Spacer(minLength: 24)
+                Spacer(minLength: ScreenMetrics.isCompact ? 12 : 24)
 
                 titleRow
-                    .padding(.bottom, 16)
+                    .padding(.bottom, ScreenMetrics.isCompact ? 8 : 16)
 
                 PlaybackScrubber(
                     currentTime: player.currentTime,
                     duration: player.duration,
                     onSeek: { player.seek(to: $0) }
                 )
-                .padding(.bottom, 8)
+                .padding(.bottom, ScreenMetrics.isCompact ? 4 : 8)
 
                 PlayerTransport(hasNext: upNext != nil) { sheet = .controls }
-                    .padding(.bottom, 18)
+                    .padding(.bottom, ScreenMetrics.playerRowSpacing)
 
                 HStack(spacing: 12) {
                     RoutePickerButton()
@@ -77,7 +78,7 @@ struct NowPlayingView: View {
                 }
                 .padding(.bottom, 8)
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, ScreenMetrics.playerMargin)
             .opacity(showsContent ? 1 : 0)
         }
         // Moving the frame (instead of `.offset`) keeps the shrink animation starting from where
@@ -87,6 +88,9 @@ struct NowPlayingView: View {
         .gesture(dismissGesture)
         .onAppear {
             withAnimation(.easeOut(duration: 0.3).delay(0.08)) { showsContent = true }
+            #if DEBUG
+            openReviewSheet()
+            #endif
         }
         .sheet(item: $sheet) { sheet in
             switch sheet {
@@ -100,7 +104,7 @@ struct NowPlayingView: View {
                 AdvancedControlsSheet()
             }
         }
-        .sensoryFeedback(.impact(weight: .medium), trigger: skipCount)
+        .haptic(.medium, trigger: skipCount)
         .accessibilityAddTraits(.isModal)
         .accessibilityAction(.escape) { collapse() }
     }
@@ -142,11 +146,11 @@ struct NowPlayingView: View {
 
             VStack(spacing: 1) {
                 Text(shell.playContext.isShuffled ? "SHUFFLING FROM" : "PLAYING FROM")
-                    .font(.system(.caption2, weight: .semibold))
+                    .font(.system(.caption2).weight(.semibold))
                     .tracking(1.2)
                     .foregroundStyle(Theme.textSubtle)
                 Text(shell.playContext.name)
-                    .font(.system(.footnote, weight: .bold))
+                    .font(.system(.footnote).weight(.bold))
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(1)
             }
@@ -181,7 +185,7 @@ struct NowPlayingView: View {
                 cornerRadius: Theme.Radius.hero
             )
             .matchedGeometryEffect(id: PlayerGeometry.artwork, in: namespace)
-            .shadow(color: Color(shell.artworkTint).opacity(0.45), radius: 40, y: 18)
+            .shadow(color: Color(shell.artworkTint).opacity(0.45), radius: DeviceProfile.prefersLightEffects ? 24 : 40, y: 18)
             .shadow(color: .black.opacity(0.4), radius: 16, y: 10)
             .scaleEffect(player.isPlaying ? 1 : 0.88)
             .animation(Theme.Motion.bounce, value: player.isPlaying)
@@ -236,7 +240,7 @@ struct NowPlayingView: View {
                     return
                 }
                 let exit = (goesNext ? -1 : 1) * width * 1.2
-                withAnimation(.easeIn(duration: 0.16)) {
+                animate(.easeIn(duration: 0.16), duration: 0.16) {
                     artworkOffset = exit
                 } completion: {
                     if goesNext { player.playNext() } else { player.playPrevious() }
@@ -253,11 +257,12 @@ struct NowPlayingView: View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(player.currentSong?.title ?? "")
-                    .font(.system(.title2, weight: .bold))
+                    .font(.system(ScreenMetrics.isCompact ? .title3 : .title2).weight(.bold))
                     .foregroundStyle(Theme.textPrimary)
-                    .lineLimit(2)
+                    .lineLimit(ScreenMetrics.isCompact ? 1 : 2)
+                    .minimumScaleFactor(ScreenMetrics.isCompact ? 0.85 : 1)
                 Text(player.currentSong?.displayArtist ?? "")
-                    .font(.system(.body, weight: .medium))
+                    .font(.system(.body).weight(.medium))
                     .foregroundStyle(Theme.textSubtle)
                     .lineLimit(1)
             }
@@ -307,6 +312,21 @@ struct NowPlayingView: View {
             withAnimation(Theme.Motion.snappy) { dragOffset = 0 }
         }
     }
+
+    #if DEBUG
+    /// `-SonusUIReviewScreen queue|controls|actions` (see `UIReviewScreen`).
+    private func openReviewSheet() {
+        let song = player.currentSong
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            switch UIReviewScreen.requested {
+            case .queue: sheet = .queue
+            case .controls: sheet = .controls
+            case .actions: sheet = song.map(PlayerSheet.actions)
+            default: break
+            }
+        }
+    }
+    #endif
 
     private func collapse() {
         withAnimation(Theme.Motion.glide) {

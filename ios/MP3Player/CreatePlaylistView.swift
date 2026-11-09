@@ -17,18 +17,18 @@ struct CreatePlaylistView: View {
         ZStack {
             Theme.glowBackground
 
-            VStack(spacing: 28) {
+            VStack(spacing: ScreenMetrics.isCompact ? 20 : 28) {
                 Spacer()
 
                 Text("Give your playlist a name")
-                    .font(.system(.title2, weight: .bold))
+                    .font(.system(.title2).weight(.bold))
                     .foregroundStyle(Theme.textPrimary)
                     .multilineTextAlignment(.center)
                     .accessibilityAddTraits(.isHeader)
 
                 VStack(spacing: 8) {
                     TextField("Playlist name", text: $name)
-                        .font(.system(.largeTitle, weight: .bold))
+                        .font(.emberDisplay)
                         .foregroundStyle(Theme.textPrimary)
                         .tint(Theme.accent)
                         .multilineTextAlignment(.center)
@@ -62,7 +62,7 @@ struct CreatePlaylistView: View {
             name = "My playlist #\(libraryStore.playlists.count + 1)"
             isFocused = true
         }
-        .sensoryFeedback(.success, trigger: didCreate)
+        .haptic(.success, trigger: didCreate)
     }
 
     private func create() {

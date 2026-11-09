@@ -21,6 +21,10 @@ struct PaywallView: View {
         var id: String { name }
     }
 
+    /// Widths of the comparison table's Free and Premium columns.
+    private static let freeColumn: CGFloat = ScreenMetrics.isCompact ? 48 : 64
+    private static let premiumColumn: CGFloat = ScreenMetrics.isCompact ? 76 : 84
+
     private let features: [Feature] = [
         Feature(name: "Your music sources", icon: "externaldrive.connected.to.line.below", isFree: true),
         Feature(name: "Streaming", icon: "dot.radiowaves.left.and.right", isFree: true),
@@ -35,7 +39,7 @@ struct PaywallView: View {
         ZStack(alignment: .topTrailing) {
             Theme.glowBackground
 
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     header
                     comparisonCard
@@ -48,15 +52,14 @@ struct PaywallView: View {
 
                     footer
                 }
-                .padding(20)
+                .padding(ScreenMetrics.isCompact ? 16 : 20)
                 .padding(.top, 8)
             }
-            .scrollIndicators(.hidden)
 
             closeButton
         }
-        .presentationBackground(Theme.backgroundBase)
-        .onChange(of: store.isPremium) { _, isPremium in
+        .emberSheet(background: Theme.backgroundBase)
+        .onChange(of: store.isPremium) { isPremium in
             if isPremium { dismiss() }   // unlocked — close the paywall
         }
         .task {
@@ -70,15 +73,15 @@ struct PaywallView: View {
     private var header: some View {
         VStack(spacing: 12) {
             Image(systemName: "crown.fill")
-                .font(.system(size: 30))
+                .font(.system(size: ScreenMetrics.isCompact ? 26 : 30))
                 .foregroundStyle(Theme.accentInk)
-                .frame(width: 72, height: 72)
+                .frame(width: ScreenMetrics.isCompact ? 60 : 72, height: ScreenMetrics.isCompact ? 60 : 72)
                 .background(Theme.playGradient, in: Circle())
                 .shadow(color: Theme.accent.opacity(0.4), radius: 18)
                 .accessibilityHidden(true)
 
             Text("Go Premium")
-                .font(.system(.largeTitle, weight: .bold))
+                .font(.emberDisplay)
                 .foregroundStyle(Theme.textPrimary)
                 .accessibilityAddTraits(.isHeader)
 
@@ -88,7 +91,7 @@ struct PaywallView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 8)
         }
-        .padding(.top, 24)
+        .padding(.top, ScreenMetrics.isCompact ? 16 : 24)
     }
 
     // MARK: - Comparison table
@@ -97,25 +100,25 @@ struct PaywallView: View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 Text("Your account")
-                    .font(.system(.footnote, weight: .semibold))
+                    .font(.system(.footnote).weight(.semibold))
                     .foregroundStyle(Theme.textSubtle)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Text("Free")
-                    .font(.system(.footnote, weight: .semibold))
+                    .font(.system(.footnote).weight(.semibold))
                     .foregroundStyle(Theme.textSubtle)
-                    .frame(width: 64)
+                    .frame(width: Self.freeColumn)
 
                 Text("Premium")
-                    .font(.system(.footnote, weight: .bold))
+                    .font(.system(.footnote).weight(.bold))
                     .foregroundStyle(Theme.accentInk)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
-                    .frame(width: 84)
+                    .frame(width: Self.premiumColumn)
                     .padding(.vertical, 6)
                     .background(Theme.accent, in: Capsule())
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, ScreenMetrics.isCompact ? 12 : 16)
             .padding(.vertical, 14)
             .accessibilityHidden(true)
 
@@ -131,7 +134,7 @@ struct PaywallView: View {
         HStack(spacing: 0) {
             Label {
                 Text(feature.name)
-                    .font(.system(.subheadline, weight: .medium))
+                    .font(.system(.subheadline).weight(.medium))
                     .foregroundStyle(Theme.textPrimary)
             } icon: {
                 Image(systemName: feature.icon)
@@ -142,22 +145,22 @@ struct PaywallView: View {
             Group {
                 if feature.isFree {
                     Image(systemName: "checkmark")
-                        .font(.system(.footnote, weight: .bold))
+                        .font(.system(.footnote).weight(.bold))
                         .foregroundStyle(Theme.textPrimary)
                 } else {
                     Image(systemName: "minus")
-                        .font(.system(.footnote, weight: .bold))
+                        .font(.system(.footnote).weight(.bold))
                         .foregroundStyle(Theme.textMuted)
                 }
             }
-            .frame(width: 64)
+            .frame(width: Self.freeColumn)
 
             Image(systemName: "checkmark.circle.fill")
                 .font(.body)
                 .foregroundStyle(Theme.accent)
-                .frame(width: 84)
+                .frame(width: Self.premiumColumn)
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, ScreenMetrics.isCompact ? 12 : 16)
         .padding(.vertical, 14)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(feature.name)
@@ -184,7 +187,7 @@ struct PaywallView: View {
             Button("Restore purchases") {
                 Task { await store.restore() }
             }
-            .font(.system(.subheadline, weight: .semibold))
+            .font(.system(.subheadline).weight(.semibold))
             .foregroundStyle(Theme.textPrimary)
             .frame(minHeight: 44)
             .disabled(purchasing)
@@ -207,11 +210,11 @@ struct PaywallView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 8) {
                         Text(plan.title)
-                            .font(.system(.headline, weight: .bold))
+                            .font(.system(.headline).weight(.bold))
                             .foregroundStyle(Theme.textPrimary)
                         if let badge = plan.badge {
                             Text(badge)
-                                .font(.system(.caption2, weight: .bold))
+                                .font(.system(.caption2).weight(.bold))
                                 .foregroundStyle(Theme.accentInk)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 3)
@@ -228,7 +231,7 @@ struct PaywallView: View {
 
                 HStack(alignment: .firstTextBaseline, spacing: 1) {
                     Text(plan.price)
-                        .font(.system(.title3, weight: .bold))
+                        .font(.system(.title3).weight(.bold))
                         .foregroundStyle(Theme.textPrimary)
                     if let cadence = plan.cadence {
                         Text(cadence)
@@ -273,7 +276,7 @@ struct PaywallView: View {
                 Text("·").foregroundStyle(Theme.textSubtle)
                 Link("Privacy", destination: ConsentConfig.privacyURL)
             }
-            .font(.system(.caption, weight: .semibold))
+            .font(.system(.caption).weight(.semibold))
         }
         .padding(.top, 4)
         .padding(.bottom, 24)

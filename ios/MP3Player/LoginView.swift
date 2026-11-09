@@ -15,11 +15,11 @@ struct LoginView: View {
                 Spacer()
 
                 // Brand
-                VStack(spacing: 22) {
-                    BrandLogoTile(size: 76)
+                VStack(spacing: ScreenMetrics.isCompact ? 16 : 22) {
+                    BrandLogoTile(size: ScreenMetrics.brandTile)
 
                     Text("Your music.\nWherever you keep it.")
-                        .font(.system(.title, weight: .bold))
+                        .font(.emberHero)
                         .foregroundStyle(Theme.textPrimary)
                         .multilineTextAlignment(.center)
                         .accessibilityAddTraits(.isHeader)
@@ -38,7 +38,7 @@ struct LoginView: View {
                         onCompletion: handleAppleSignIn
                     )
                     .signInWithAppleButtonStyle(.white)
-                    .frame(height: 52)
+                    .frame(height: ScreenMetrics.pillHeight)
                     .clipShape(Capsule())
 
                     signInOption(icon: "g.circle.fill", title: "Continue with Google") {
@@ -47,11 +47,12 @@ struct LoginView: View {
                     signInOption(icon: "envelope.fill", title: "Continue with email") {
                         showEmailSheet = true
                     }
-                    signInOption(icon: "iphone", title: "Continue with phone number") {
+                    // The full label doesn't fit a 4-inch screen.
+                    signInOption(icon: "iphone", title: ScreenMetrics.isCompact ? "Continue with phone" : "Continue with phone number") {
                         showPhoneSheet = true
                     }
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, ScreenMetrics.isCompact ? 20 : 24)
 
                 if let errorMessage {
                     InlineError(message: errorMessage)
@@ -68,11 +69,11 @@ struct LoginView: View {
                         Text("·").foregroundStyle(Theme.textSubtle)
                         Link("Privacy Policy", destination: ConsentConfig.privacyURL)
                     }
-                    .fontWeight(.semibold)
+                    .font(.caption.weight(.semibold))
                 }
                 .font(.caption)
-                .padding(.top, 24)
-                .padding(.bottom, 24)
+                .padding(.top, ScreenMetrics.isCompact ? 16 : 24)
+                .padding(.bottom, ScreenMetrics.isCompact ? 16 : 24)
             }
 
             if case .authenticating = authManager.authState {
@@ -86,7 +87,7 @@ struct LoginView: View {
         .sheet(isPresented: $showPhoneSheet) {
             PhoneAuthSheet(mode: .signIn).environmentObject(authManager)
         }
-        .onChange(of: authManager.authState.errorText) { _, newValue in
+        .onChange(of: authManager.authState.errorText) { newValue in
             errorMessage = newValue
         }
     }
@@ -100,6 +101,8 @@ struct LoginView: View {
                     .frame(width: 24)
                 Spacer()
                 Text(title)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
                 Spacer()
                 Color.clear.frame(width: 24, height: 1)
             }
@@ -143,7 +146,7 @@ struct EmailAuthSheet: View {
     @State private var infoMessage: String?
 
     var body: some View {
-        NavigationStack {
+        CompatNavigationStack {
             ZStack {
                 Theme.background
 
@@ -151,10 +154,10 @@ struct EmailAuthSheet: View {
                     VStack(spacing: 16) {
                         HStack(spacing: 8) {
                             FilterPill(title: "Sign in", isSelected: !isSignUp) {
-                                withAnimation(.snappy) { isSignUp = false }
+                                withAnimation(Theme.Motion.snappy) { isSignUp = false }
                             }
                             FilterPill(title: "Create account", isSelected: isSignUp) {
-                                withAnimation(.snappy) { isSignUp = true }
+                                withAnimation(Theme.Motion.snappy) { isSignUp = true }
                             }
                             Spacer(minLength: 0)
                         }
@@ -195,7 +198,7 @@ struct EmailAuthSheet: View {
 
                         if !isSignUp {
                             Button("Forgot password?") { sendReset() }
-                                .font(.system(.subheadline, weight: .semibold))
+                                .font(.system(.subheadline).weight(.semibold))
                                 .foregroundStyle(Theme.textPrimary)
                                 .frame(minHeight: 44)
 
@@ -220,7 +223,7 @@ struct EmailAuthSheet: View {
                 }
             }
         }
-        .presentationBackground(Theme.backgroundBase)
+        .emberSheet(background: Theme.backgroundBase)
     }
 
     private var formIsValid: Bool {
@@ -294,7 +297,7 @@ struct PhoneAuthSheet: View {
     @State private var errorMessage: String?
 
     var body: some View {
-        NavigationStack {
+        CompatNavigationStack {
             ZStack {
                 Theme.background
 
@@ -333,7 +336,7 @@ struct PhoneAuthSheet: View {
                             code = ""
                             sendCode()
                         }
-                        .font(.system(.subheadline, weight: .semibold))
+                        .font(.system(.subheadline).weight(.semibold))
                         .foregroundStyle(Theme.textPrimary)
                         .frame(minHeight: 44)
                     }
@@ -350,7 +353,7 @@ struct PhoneAuthSheet: View {
                 }
             }
         }
-        .presentationBackground(Theme.backgroundBase)
+        .emberSheet(background: Theme.backgroundBase)
     }
 
     private var normalizedPhone: String {

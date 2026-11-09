@@ -36,6 +36,10 @@ final class QueuePlayerEngine {
     init() {
         player.automaticallyWaitsToMinimizeStalling = true
         player.actionAtItemEnd = .pause
+        #if DEBUG
+        // `-SonusMuted`: Simulator test runs play silently.
+        player.isMuted = ProcessInfo.processInfo.arguments.contains("-SonusMuted")
+        #endif
         observePlayer()
     }
 
@@ -94,8 +98,14 @@ final class QueuePlayerEngine {
     }
 
     func play(rate: Float) {
-        player.defaultRate = rate
-        player.play()
+        if #available(iOS 16.0, *) {
+            player.defaultRate = rate
+            player.play()
+        } else {
+            // iOS 15 has no `defaultRate`: `play()` always starts at 1×, so set the speed after.
+            player.play()
+            if rate != 1 { player.rate = rate }
+        }
     }
 
     func pause() {
@@ -103,7 +113,9 @@ final class QueuePlayerEngine {
     }
 
     func setRate(_ rate: Float) {
-        player.defaultRate = rate
+        if #available(iOS 16.0, *) {
+            player.defaultRate = rate
+        }
         if player.rate != 0 {
             player.rate = rate
         }

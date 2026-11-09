@@ -13,6 +13,10 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     ) -> Bool {
         FirebaseBootstrap.configure()
         AdsManager.shared.start()
+        LegacyAppearance.apply()
+        #if DEBUG
+        print("[Sonus] Device: \(DeviceProfile.summary)")
+        #endif
         // Link StoreKit purchases to the signed-in user for server verification.
         Task { @MainActor in
             StoreManager.shared.appAccountTokenProvider = {
@@ -131,10 +135,31 @@ struct MP3PlayerApp: App {
             .environmentObject(librarySync)
             .environmentObject(downloadManager)
             .tint(Theme.accent)            // amber accent for system controls
+            .accentColor(Theme.accent)     // iOS 15 navigation bars and alerts follow this one
             .preferredColorScheme(.dark)   // Ember is dark only
+            .simulatedIPodScreen()
             .onOpenURL { url in
                 _ = GIDSignIn.sharedInstance.handle(url)
             }
+        }
+    }
+}
+
+private extension View {
+    /// DEBUG `-SonusSimulateIPod`: draws the app in a 320 × 568 pt frame at the top left, the size
+    /// of the iPod touch (7th generation) screen. Run it on an iPhone SE (3rd generation), whose
+    /// status bar and missing home indicator match the iPod's. Sheets still use the full window.
+    @ViewBuilder
+    func simulatedIPodScreen() -> some View {
+        if LaunchFlags.simulateIPod {
+            // The status bar (20 pt) stays above the frame, as on the iPod.
+            frame(width: LaunchFlags.simulatedScreen.width, height: LaunchFlags.simulatedScreen.height - 20)
+                // Clip to the screen, but let backgrounds reach up under the status bar.
+                .mask(Rectangle().padding(.top, -20))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .background(Color(white: 0.25).ignoresSafeArea())
+        } else {
+            self
         }
     }
 }

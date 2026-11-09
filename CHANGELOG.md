@@ -2,6 +2,34 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-11-09 — Sonus runs on iOS 15 and the iPod touch (7th generation); build 4
+
+- The app now installs on iOS 15. `IPHONEOS_DEPLOYMENT_TARGET` goes from 17.0 to 15.0 and
+  SonusCore from `.iOS(.v17)` to `.iOS(.v15)`. The iPod touch (7th generation) stops at iOS 15.8,
+  so until now TestFlight wouldn't install Sonus on it.
+- Every iOS 16/17-only API now has an iOS 15 path (`Compat.swift`):
+  - Navigation: `NavigationStack` on iOS 16+, a stack-style `NavigationView` driven by the same
+    route path on iOS 15. The tabs keep their own stacks; iOS 15 can't hide a `TabView`'s bar, so
+    there the tabs are stacked and only the selected one is shown.
+  - Sheets: detents, grabber, background and corner radius go through UIKit's sheet controller on
+    iOS 15 (medium and large only).
+  - Haptics fall back to UIKit feedback generators; symbol effects and content transitions are
+    skipped on iOS 15; fonts use `Font.system(_:).weight(_:)`.
+  - Playback speed sets `rate` after `play()` where `defaultRate` doesn't exist. On iOS 15 and 16
+    streams whose MIME type needs overriding go through the resource loader, which reports the
+    file type itself. Cover art clips instead of using `Path.intersection`.
+- 4-inch screens (320 pt wide: the iPod touch, the first iPhone SE, zoomed displays) get a compact
+  layout (`ScreenMetrics` in `DeviceProfile.swift`): a smaller transport row, which didn't fit
+  before, plus smaller artwork, cards, tab bar, mini-player and pill buttons, and one step smaller
+  hero titles. Larger screens are unchanged.
+- On older hardware (any iOS 15 device, and the iPod touch) Now Playing and Home's hero card use
+  gradients in the artwork's colour instead of re-blurring the artwork, so animations stay smooth
+  on an A10.
+- DEBUG only: `-SonusLegacyUI`, `-SonusCompactLayout` and `-SonusSimulateIPod` force the iOS 15
+  paths and the 4-inch layout on a newer Simulator, `-SonusUIReviewScreen <screen>` opens a screen
+  for screenshots, and `-SonusMuted` silences playback.
+- `CURRENT_PROJECT_VERSION` goes to 4 for TestFlight.
+
 ## 2026-10-31 — Build 3 for TestFlight
 
 - Raises `CURRENT_PROJECT_VERSION` from 2 to 3. TestFlight build 1.0 (3) was uploaded from `main`

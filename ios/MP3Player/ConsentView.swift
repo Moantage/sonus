@@ -31,13 +31,13 @@ struct ConsentView: View {
                 // Header
                 VStack(spacing: 12) {
                     Image(systemName: "lock.shield.fill")
-                        .font(.system(size: 30, weight: .regular))
+                        .font(.system(size: ScreenMetrics.isCompact ? 24 : 30, weight: .regular))
                         .foregroundStyle(Theme.accent)
-                        .frame(width: 68, height: 68)
+                        .frame(width: ScreenMetrics.isCompact ? 52 : 68, height: ScreenMetrics.isCompact ? 52 : 68)
                         .background(Theme.surfaceRaised, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
                         .accessibilityHidden(true)
                     Text("Your privacy")
-                        .font(.system(.title, weight: .bold))
+                        .font(.emberHero)
                         .foregroundStyle(Theme.textPrimary)
                         .accessibilityAddTraits(.isHeader)
                     Text("Please review and accept before you continue.")
@@ -45,8 +45,8 @@ struct ConsentView: View {
                         .foregroundStyle(Theme.textSubtle)
                         .multilineTextAlignment(.center)
                 }
-                .padding(.top, 32)
-                .padding(.bottom, 20)
+                .padding(.top, ScreenMetrics.isCompact ? 16 : 32)
+                .padding(.bottom, ScreenMetrics.isCompact ? 12 : 20)
                 .padding(.horizontal, 24)
 
                 // Agreement body
@@ -55,7 +55,7 @@ struct ConsentView: View {
                         ForEach(Self.sections, id: \.title) { section in
                             VStack(alignment: .leading, spacing: 6) {
                                 Text(section.title)
-                                    .font(.system(.subheadline, weight: .bold))
+                                    .font(.system(.subheadline).weight(.bold))
                                     .foregroundStyle(Theme.textPrimary)
                                 Text(section.body)
                                     .font(.subheadline)
@@ -70,7 +70,7 @@ struct ConsentView: View {
                             Text("·").foregroundStyle(Theme.textSubtle)
                             Link("Full Privacy Policy", destination: ConsentConfig.privacyURL)
                         }
-                        .font(.system(.footnote, weight: .semibold))
+                        .font(.system(.footnote).weight(.semibold))
                         .padding(.top, 4)
 
                         Text("Version \(ConsentConfig.currentVersion) · Last updated \(ConsentConfig.lastUpdated)")
@@ -84,7 +84,7 @@ struct ConsentView: View {
                 }
 
                 // Accept
-                VStack(spacing: 14) {
+                VStack(spacing: ScreenMetrics.isCompact ? 10 : 14) {
                     Button {
                         agreed.toggle()
                     } label: {
@@ -92,7 +92,7 @@ struct ConsentView: View {
                             Image(systemName: agreed ? "checkmark.circle.fill" : "circle")
                                 .font(.system(size: 24))
                                 .foregroundStyle(agreed ? Theme.accent : Theme.textSubtle)
-                                .contentTransition(.symbolEffect(.replace))
+                                .symbolReplaceTransition()
                             Text("I have read and agree to the Terms of Service and Privacy Policy, and I consent to the processing of my personal data as described above.")
                                 .font(.footnote)
                                 .foregroundStyle(Theme.textPrimary)
@@ -102,9 +102,9 @@ struct ConsentView: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .sensoryFeedback(.selection, trigger: agreed)
+                    .haptic(.selection, trigger: agreed)
                     .accessibilityElement(children: .combine)
-                    .accessibilityAddTraits(.isToggle)
+                    .accessibilityToggleTrait()
                     .accessibilityValue(agreed ? "Checked" : "Unchecked")
 
                     if let errorMessage {
@@ -120,13 +120,13 @@ struct ConsentView: View {
                     Button("Decline and sign out") {
                         authManager.signOut()
                     }
-                    .font(.system(.footnote, weight: .semibold))
+                    .font(.system(.footnote).weight(.semibold))
                     .foregroundStyle(Theme.textSubtle)
                     .frame(minHeight: 44)
                 }
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-                .padding(.bottom, 24)
+                .padding(.horizontal, ScreenMetrics.isCompact ? 20 : 24)
+                .padding(.top, ScreenMetrics.isCompact ? 8 : 12)
+                .padding(.bottom, ScreenMetrics.isCompact ? 12 : 24)
             }
         }
     }

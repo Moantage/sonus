@@ -61,8 +61,8 @@ struct BannerPickerSheet: View {
     private let columns = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
+        CompatNavigationStack {
+            ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     LazyVGrid(columns: columns, spacing: 12) {
                         ForEach(ProfileBanner.all) { banner in
@@ -78,7 +78,6 @@ struct BannerPickerSheet: View {
                 }
                 .padding(20)
             }
-            .scrollIndicators(.hidden)
             .background(Theme.backgroundElevated)
             .navigationTitle("Profile banner")
             .navigationBarTitleDisplayMode(.inline)
@@ -88,8 +87,7 @@ struct BannerPickerSheet: View {
                 }
             }
         }
-        .presentationBackground(Theme.backgroundElevated)
-        .presentationCornerRadius(20)
+        .emberSheet(background: Theme.backgroundElevated, cornerRadius: 20)
     }
 
     private func bannerCell(_ banner: ProfileBanner) -> some View {
@@ -117,7 +115,7 @@ struct BannerPickerSheet: View {
 
                 HStack {
                     Text(banner.name)
-                        .font(.system(.footnote, weight: .bold))
+                        .font(.system(.footnote).weight(.bold))
                         .foregroundStyle(.white)
                     Spacer()
                     if selected {
@@ -133,7 +131,7 @@ struct BannerPickerSheet: View {
             )
         }
         .buttonStyle(PressableButtonStyle(scale: 0.96))
-        .sensoryFeedback(.selection, trigger: selected)
+        .haptic(.selection, trigger: selected)
         .accessibilityLabel(banner.name)
         .accessibilityValue(selected ? "Selected" : (locked ? "Premium" : ""))
         .accessibilityAddTraits(selected ? .isSelected : [])

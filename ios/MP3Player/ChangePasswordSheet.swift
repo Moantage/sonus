@@ -14,7 +14,7 @@ struct ChangePasswordSheet: View {
     private var isSettingFirstPassword: Bool { !authManager.hasPasswordProvider }
 
     var body: some View {
-        NavigationStack {
+        CompatNavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
                     if isSettingFirstPassword {
@@ -55,7 +55,7 @@ struct ChangePasswordSheet: View {
                 }
             }
         }
-        .presentationBackground(Theme.backgroundBase)
+        .emberSheet(background: Theme.backgroundBase)
     }
 
     private var formIsValid: Bool {
