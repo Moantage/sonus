@@ -46,12 +46,11 @@ struct SettingsLabel: View {
     }
 }
 
-/// A tappable settings row with a chevron, or a lock for Premium features.
+/// A tappable settings row with a chevron.
 struct SettingsRow: View {
     let icon: String
     let title: String
     var detail: String?
-    var isLocked = false
     let action: () -> Void
 
     var body: some View {
@@ -59,16 +58,15 @@ struct SettingsRow: View {
             HStack(spacing: 12) {
                 SettingsLabel(icon: icon, title: title, detail: detail)
                 Spacer(minLength: 0)
-                Image(systemName: isLocked ? "lock.fill" : "chevron.right")
+                Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(isLocked ? Theme.accent : Theme.textMuted)
+                    .foregroundStyle(Theme.textMuted)
                     .accessibilityHidden(true)
             }
             .frame(minHeight: 52)
             .contentShape(Rectangle())
         }
         .buttonStyle(PressableButtonStyle(scale: 0.98))
-        .accessibilityValue(isLocked ? "Premium" : "")
     }
 }
 

@@ -22,13 +22,15 @@ Self-hosting your music is about keeping control of it. These are Sonus's commit
 
 ## Your Sonus account
 
-The official app asks you to sign in. The account holds:
+The official app asks you to sign in. Sonus is free: there are no ads, no purchases and no
+tracking. The account holds:
 
-- your profile and plan (free or Premium)
-- with Premium, the data needed to sync your library layout across your devices
+- your profile
+- when you use Sync across devices, the data needed to sync your library layout across your
+  devices
 
-Source lists synced to your account never include passwords, tokens or keys. With Premium library
-sync, your songs' titles and addresses sync too, but never a token or a password.
+Source lists synced to your account never include passwords, tokens or keys. When you sync your
+library, your songs' titles and addresses sync too, but never a token or a password.
 
 ## Networking rules
 

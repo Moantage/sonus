@@ -50,8 +50,8 @@ swift test --package-path ios/SonusCore    # unit tests (macOS or Linux)
 
 1. Copy `ios/MP3Player/GoogleService-Info.example.plist` to `GoogleService-Info.plist` and fill it
    in from your own Firebase project.
-2. AdMob and Google Sign-In use placeholder or test IDs from `ios/MP3Player/Config.xcconfig`. To
-   use real ones, copy `Secrets.example.xcconfig` to `Secrets.xcconfig` (gitignored).
+2. Google Sign-In uses a placeholder ID from `ios/MP3Player/Config.xcconfig`. To use a real one,
+   copy `Secrets.example.xcconfig` to `Secrets.xcconfig` (gitignored).
 
 ## Contributing
 

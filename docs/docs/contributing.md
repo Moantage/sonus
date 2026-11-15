@@ -37,7 +37,7 @@ swiftlint lint
 
 To build the app, open `ios/MP3Player.xcodeproj` in Xcode. Copy
 `ios/MP3Player/GoogleService-Info.example.plist` to `GoogleService-Info.plist` with your own Firebase
-project's values. AdMob uses Google's test IDs unless you add a `Secrets.xcconfig`.
+project's values. Google Sign-In uses a placeholder ID unless you add a `Secrets.xcconfig`.
 
 ### Testing sign-in without a Firebase project
 
