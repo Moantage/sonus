@@ -2,6 +2,15 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-11-16 — Build 6 for TestFlight
+
+- Build number 5 → 6. Build 6 is the first build with the real privacy policy and terms links and
+  the account-deletion fix.
+- Apple rejected build 4 for external testing with ITMS-91064 ("NSPrivacyTracking must be true if
+  NSPrivacyTrackingDomains isn't empty"). The privacy manifests behind it came with the Google
+  Mobile Ads and User Messaging Platform SDKs, which were removed in build 5. Every privacy
+  manifest in the build now declares no tracking and no tracking domains.
+
 ## 2026-11-16 — Real privacy policy and terms; account deletion removes the synced library
 
 - New full privacy policy at `/privacy` (replaces the short "Privacy and security" page) and new
