@@ -57,6 +57,6 @@ need a new major version; see the versioning page on the docs site.
 
 ## Never commit secrets
 
-Firebase config, real AdMob IDs, API keys, certificates and personal documents are gitignored.
+Firebase config, real Google Sign-In IDs, API keys, certificates and personal documents are gitignored.
 Use the `*.example.*` templates instead. GitHub secret scanning with push protection is enabled
 on this repository.

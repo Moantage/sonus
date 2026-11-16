@@ -1,8 +1,7 @@
 import Foundation
 import SonusCore
 
-/// Downloads songs from their source so they play offline. Free for everyone: offline play is not
-/// a Premium feature.
+/// Downloads songs from their source so they play offline.
 ///
 /// A song is "downloaded" when its audio file exists locally (see `Song.isDownloadedLocally`);
 /// imported songs already are. Downloads run on a background `URLSession`

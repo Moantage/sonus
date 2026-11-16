@@ -3,8 +3,8 @@ import SwiftUI
 /// Versioned agreement config. Bump `currentVersion` whenever the terms change
 /// materially — users will be re-prompted to accept on next launch.
 enum ConsentConfig {
-    static let currentVersion = "1.0"
-    static let lastUpdated = "2 July 2026"
+    static let currentVersion = "1.1"
+    static let lastUpdated = "15 November 2026"
 
     // TODO: replace with your real published URLs and company details.
     static let termsURL = URL(string: "https://example.com/terms")!
@@ -160,15 +160,21 @@ struct ConsentView: View {
         ),
         Section(
             title: "What we collect",
-            body: "Your name and email address; a one-way hashed version of your phone number (plus the last 4 digits) if you add one; your sign-in method (Apple, Google, email, or phone); your account and subscription status; and, if you use ads, an advertising identifier and related ad-interaction data."
+            body: "Your name and email address; a one-way hashed version of your phone number (plus the last 4 digits) "
+                + "if you add one; your sign-in method (Apple, Google, email, or phone); and, if you use Sync across "
+                + "devices, your library and playlists. Sonus has no ads and no purchases, and it does not collect an "
+                + "advertising identifier."
         ),
         Section(
             title: "Why we process it (legal bases)",
-            body: "To create and secure your account and provide the service (performance of a contract); to keep the app safe and prevent abuse (legitimate interests); to show advertising to non-premium users (your consent, which you can withdraw); and to meet legal obligations where they apply."
+            body: "To create and secure your account and provide the service (performance of a contract); to keep the "
+                + "app safe and prevent abuse (legitimate interests); and to meet legal obligations where they apply."
         ),
         Section(
             title: "Who we share it with",
-            body: "Trusted processors that run the service on our behalf: Google Firebase (authentication and database) and, for non-premium users, Google AdMob (advertising). They process data under their own terms and only as needed to provide these functions. We do not sell your personal data."
+            body: "Trusted processors that run the service on our behalf: Google Firebase (authentication and database). "
+                + "They process data under their own terms and only as needed to provide these functions. We do not sell "
+                + "your personal data."
         ),
         Section(
             title: "Passwords and phone numbers",
@@ -187,8 +193,9 @@ struct ConsentView: View {
             body: "Under the GDPR you can access, correct, delete, restrict, or object to the processing of your data, and request a portable copy. Where processing is based on consent, you can withdraw it at any time without affecting prior processing. You also have the right to lodge a complaint with your local data protection authority."
         ),
         Section(
-            title: "Advertising & tracking",
-            body: "If you are on the free plan, we show ads via Google AdMob. iOS will separately ask your permission before any cross-app tracking; you can decline and still use the app, and you can upgrade to remove ads entirely."
+            title: "No ads, no tracking",
+            body: "Sonus is free and shows no ads. We do not track you across other companies' apps or websites, and we "
+                + "do not sell or share your data for advertising."
         )
     ]
 }

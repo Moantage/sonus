@@ -11,7 +11,6 @@ enum UIReviewScreen: String {
     case library
     case collection
     case profile
-    case paywall
     case createPlaylist
     case nowPlaying
     case queue
@@ -40,7 +39,7 @@ enum UIReviewScreen: String {
         case .collection:
             shell.selectedTab = .library
             shell.paths[.library] = [.collection(.allSongs)]
-        case .profile, .paywall:
+        case .profile:
             shell.push(.profile)
         case .createPlaylist:
             shell.startCreatingPlaylist()

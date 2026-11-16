@@ -2,6 +2,23 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-11-16 — Sonus is free for everyone: Premium, ads and tracking removed; build 5
+
+- Every feature is free. Profile banners, high-quality audio and Sync across devices no longer
+  need Premium. The Profile screen loses the Go Premium card, the Free plan badge and the locks;
+  high-quality audio moves into the Playback section, and the banner and sync rows sit in a new
+  "Profile and sync" section.
+- No ads: the Google Mobile Ads SDK, the app-open and interstitial ads, the AdMob IDs and the
+  App Tracking Transparency prompt are gone. `PrivacyInfo.xcprivacy` now declares no tracking and
+  no purchase, device-ID or advertising data; it adds "other user content" for library sync.
+- No purchases: StoreKit, the paywall, the `.storekit` test file and the App Store
+  server-notification Cloud Functions are removed. Firebase keeps only the Firestore rules.
+- The consent screen's privacy text no longer mentions ads or plans, and its version moves from
+  1.0 to 1.1, so existing users accept it once more.
+- The Firestore profile still writes `isPremium: false` on create because the deployed rules
+  require it; the app never reads it.
+- Build number 4 → 5 for the next TestFlight upload.
+
 ## 2026-11-09 — Sonus runs on iOS 15 and the iPod touch (7th generation); build 4
 
 - The app now installs on iOS 15. `IPHONEOS_DEPLOYMENT_TARGET` goes from 17.0 to 15.0 and

@@ -1,7 +1,7 @@
 import AVFoundation
 import UIKit
 
-/// The app's audio session: the playback category, the Premium quality preference, and the system
+/// The app's audio session: the playback category, the high-quality audio preference, and the system
 /// events the player reacts to (interruptions, unplugged headphones, media-services resets).
 @MainActor
 final class AudioSessionController {
@@ -28,7 +28,7 @@ final class AudioSessionController {
             try session.setCategory(.playback, mode: .default, policy: .longFormAudio)
 
             if highQuality {
-                // Prefer a high sample rate so we never downsample premium output.
+                // Prefer a high sample rate so we never downsample high-quality output.
                 try? session.setPreferredSampleRate(48_000)
                 try? session.setPreferredIOBufferDuration(0.005)
             } else {

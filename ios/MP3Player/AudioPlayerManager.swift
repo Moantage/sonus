@@ -40,7 +40,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     /// Seconds of the current song loaded so far, for a buffer bar under the scrubber.
     @Published private(set) var bufferedTime: TimeInterval = 0
 
-    // MARK: - Premium: advanced controls
+    // MARK: - Advanced controls
 
     /// Playback speed (pitch-preserved). 1.0 = normal.
     @Published private(set) var playbackSpeed: Float = 1.0
@@ -49,7 +49,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
     /// When set, playback auto-pauses at this time.
     @Published private(set) var sleepTimerEndsAt: Date?
 
-    /// Premium high-quality output (higher session sample rate + best route).
+    /// High-quality output (higher session sample rate + best route).
     @Published private(set) var highQualityAudioEnabled: Bool
 
     private let engine = QueuePlayerEngine()
@@ -206,7 +206,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         repeatMode = repeatMode == .one ? .off : .one
     }
 
-    // MARK: - Premium: advanced controls
+    // MARK: - Advanced controls
 
     /// Sets pitch-preserved playback speed and applies it immediately.
     func setPlaybackSpeed(_ speed: Float) {
@@ -245,7 +245,7 @@ final class AudioPlayerManager: NSObject, ObservableObject {
         sleepTimerEndsAt = nil
     }
 
-    /// Enables/disables premium high-quality audio output and reconfigures the session.
+    /// Enables/disables high-quality audio output and reconfigures the session.
     func setHighQualityAudio(_ enabled: Bool) {
         highQualityAudioEnabled = enabled
         UserDefaults.standard.set(enabled, forKey: DefaultsKeys.highQualityAudio)

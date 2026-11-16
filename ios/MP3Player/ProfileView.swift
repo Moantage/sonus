@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// Profile & settings, opened from the avatar on any tab: banner and plan, playback settings,
-/// Premium features, account details, security, sign out and account deletion.
+/// Profile & settings, opened from the avatar on any tab: banner, playback settings, profile
+/// banner and sync, account details, security, sign out and account deletion. Everything in Sonus
+/// is free; there are no plans or purchases.
 struct ProfileView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
-    @EnvironmentObject private var store: StoreManager
     @EnvironmentObject private var player: AudioPlayerManager
     @EnvironmentObject private var libraryStore: LibraryStore
     @EnvironmentObject private var librarySync: LibrarySyncService
@@ -21,27 +21,16 @@ struct ProfileView: View {
     @State private var showChangePassword = false
     @State private var showPhoneSheet = false
     @State private var showDeleteConfirmation = false
-    @State private var showPaywall = false
     @State private var showBannerPicker = false
     @State private var showPlaybackControls = false
     @State private var deleteError: String?
-
-    /// Premium if either the verified StoreKit entitlement or the server-set Firestore flag is true.
-    private var isPremium: Bool {
-        store.isPremium || authManager.currentUser?.isPremium == true
-    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: ScreenMetrics.sectionSpacing) {
                 header
-
-                if !isPremium {
-                    upgradeCard
-                }
-
                 playbackSection
-                premiumSection
+                profileSection
                 accountSection
                 securitySection
                 signOutSection
@@ -79,23 +68,14 @@ struct ProfileView: View {
         .sheet(isPresented: $showPhoneSheet) {
             PhoneAuthSheet(mode: .linkToAccount)
         }
-        .sheet(isPresented: $showPaywall) {
-            PaywallView()
-        }
         .sheet(isPresented: $showBannerPicker) {
-            BannerPickerSheet(isPremium: isPremium) {
-                showBannerPicker = false
-                showPaywall = true
-            }
+            BannerPickerSheet()
         }
         .sheet(isPresented: $showPlaybackControls) {
             AdvancedControlsSheet()
         }
         .onAppear {
             loadUserData()
-            #if DEBUG
-            if UIReviewScreen.requested == .paywall { showPaywall = true }
-            #endif
         }
     }
 
@@ -109,9 +89,9 @@ struct ProfileView: View {
                     .frame(height: ScreenMetrics.isCompact ? 104 : 128)
 
                 Button {
-                    if isPremium { showBannerPicker = true } else { showPaywall = true }
+                    showBannerPicker = true
                 } label: {
-                    Image(systemName: isPremium ? "paintbrush.fill" : "lock.fill")
+                    Image(systemName: "paintbrush.fill")
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(width: 32, height: 32)
@@ -119,7 +99,7 @@ struct ProfileView: View {
                         .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.pressable)
-                .accessibilityLabel(isPremium ? "Change profile banner" : "Profile banners are a Premium feature")
+                .accessibilityLabel("Change profile banner")
                 .padding(4)
             }
 
@@ -139,75 +119,31 @@ struct ProfileView: View {
                 }
             }
             .multilineTextAlignment(.center)
-
-            if isPremium {
-                Label(store.hasLifetime ? "Premium · Lifetime" : "Premium", systemImage: "crown.fill")
-                    .font(.system(.caption).weight(.bold))
-                    .foregroundStyle(Theme.premiumGold)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 5)
-                    .background(Theme.premiumGoldWell, in: Capsule())
-            } else {
-                Text("Free plan")
-                    .font(.system(.caption).weight(.semibold))
-                    .foregroundStyle(Theme.textSubtle)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 5)
-                    .background(Theme.surfaceRaised, in: Capsule())
-            }
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
-    }
-
-    private var upgradeCard: some View {
-        Button {
-            showPaywall = true
-        } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "crown.fill")
-                    .font(.system(size: 18))
-                    .foregroundStyle(Theme.accentInk)
-                    .frame(width: 44, height: 44)
-                    .background(Theme.playGradient, in: Circle())
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Go Premium")
-                        .font(.system(.headline).weight(.bold))
-                        .foregroundStyle(Theme.textPrimary)
-                    Text("High-quality audio, profile banners, sync and no ads")
-                        .font(.footnote)
-                        .foregroundStyle(Theme.textSubtle)
-                }
-                .multilineTextAlignment(.leading)
-
-                Spacer(minLength: 0)
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Theme.accent)
-            }
-            .padding(16)
-            .background(Theme.accent.opacity(0.12), in: RoundedRectangle(cornerRadius: Theme.Radius.tile, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: Theme.Radius.tile, style: .continuous)
-                    .stroke(Theme.accent.opacity(0.45), lineWidth: 1)
-            )
-        }
-        .buttonStyle(PressableButtonStyle(scale: 0.98))
     }
 }
 
 // MARK: - Sections and actions
 
 extension ProfileView {
-    // MARK: - Playback (free)
+    // MARK: - Playback
 
     private var playbackSection: some View {
         SettingsSection(title: "Playback") {
             SettingsRow(icon: "slider.horizontal.3", title: "Playback controls", detail: "Speed, skip and sleep timer") {
                 showPlaybackControls = true
             }
+
+            Toggle(isOn: Binding(
+                get: { player.highQualityAudioEnabled },
+                set: { player.setHighQualityAudio($0) }
+            )) {
+                SettingsLabel(icon: "waveform", title: "High-quality audio", detail: "Best output for AirPlay and Bluetooth")
+            }
+            .tint(Theme.accent)
+            .frame(minHeight: 52)
 
             SettingsRow(icon: "arrow.down.circle", title: "Downloaded", detail: downloadsDetail) {
                 shell.push(.collection(.downloaded))
@@ -220,46 +156,24 @@ extension ProfileView {
         return downloaded == 1 ? "1 song on this device" : "\(downloaded) songs on this device"
     }
 
-    // MARK: - Premium
+    // MARK: - Profile and sync
 
-    private var premiumSection: some View {
-        SettingsSection(title: "Premium") {
-            if isPremium {
-                Toggle(isOn: Binding(
-                    get: { player.highQualityAudioEnabled },
-                    set: { player.setHighQualityAudio($0) }
-                )) {
-                    SettingsLabel(icon: "waveform", title: "High-quality audio", detail: "Best output for AirPlay and Bluetooth")
-                }
-                .tint(Theme.accent)
-                .frame(minHeight: 52)
-            } else {
-                SettingsRow(
-                    icon: "waveform",
-                    title: "High-quality audio",
-                    detail: "Best output for AirPlay and Bluetooth",
-                    isLocked: true
-                ) {
-                    showPaywall = true
-                }
-            }
-
+    private var profileSection: some View {
+        SettingsSection(title: "Profile and sync") {
             SettingsRow(
                 icon: "photo",
                 title: "Profile banner",
-                detail: ProfileBanner.banner(for: authManager.currentUser?.profileBanner).name,
-                isLocked: !isPremium
+                detail: ProfileBanner.banner(for: authManager.currentUser?.profileBanner).name
             ) {
-                if isPremium { showBannerPicker = true } else { showPaywall = true }
+                showBannerPicker = true
             }
 
             SettingsRow(
                 icon: "arrow.triangle.2.circlepath",
                 title: "Sync across devices",
-                detail: isPremium ? syncDetail : "Your library on every device",
-                isLocked: !isPremium
+                detail: syncDetail
             ) {
-                if isPremium { syncNow() } else { showPaywall = true }
+                syncNow()
             }
         }
     }

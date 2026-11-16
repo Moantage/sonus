@@ -89,7 +89,6 @@ final class AuthenticationManager: NSObject, ObservableObject {
                 lastName: pendingLastName ?? "",
                 profilePhotoURL: firebaseUser.photoURL?.absoluteString,
                 phoneLast4: firebaseUser.phoneNumber.map { String($0.suffix(4)) },
-                isPremium: false,
                 createdAt: firebaseUser.metadata.creationDate ?? Date(),
                 updatedAt: Date()
             )
@@ -101,13 +100,6 @@ final class AuthenticationManager: NSObject, ObservableObject {
     func refreshProfile() async {
         guard let firebaseUser = Auth.auth().currentUser else { return }
         await loadProfile(for: firebaseUser)
-    }
-
-    /// Stable per-user token that links App Store purchases to this account for
-    /// server-side verification (passed as StoreKit's `appAccountToken`).
-    func appAccountToken() async -> UUID? {
-        guard let uid = Auth.auth().currentUser?.uid else { return nil }
-        return try? await userRepository.getOrCreateAppAccountToken(uid: uid)
     }
 
     /// Updates the selected profile banner (Firestore + local state).

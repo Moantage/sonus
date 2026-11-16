@@ -11,7 +11,6 @@ struct User: Identifiable, Codable {
     /// Last 4 digits of the linked phone number, for display only.
     /// The full number is never stored in Firestore — only a salted hash.
     var phoneLast4: String?
-    var isPremium: Bool
     /// Selected profile banner id (see ProfileBanner). nil = Classic (free).
     var profileBanner: String? = nil
     /// When the user accepted the GDPR terms & privacy agreement (nil = not yet).

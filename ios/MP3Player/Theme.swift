@@ -44,10 +44,8 @@ enum Theme {
     /// Text and glyphs on amber fills.
     static let accentInk = Color(hex: 0x1A1206)
 
-    // MARK: Premium / status
+    // MARK: Status
 
-    static let premiumGold = Color(hex: 0xFFD60A)
-    static let premiumGoldWell = Color(hex: 0xFFD60A).opacity(0.14)
     static let error = Color.red.opacity(0.9)
     static let success = Color(hex: 0x7FD6A0)
 
@@ -97,7 +95,7 @@ enum Theme {
         backgroundBase.ignoresSafeArea()
     }
 
-    /// Top-lit warm glow used behind onboarding, login and the paywall.
+    /// Top-lit warm glow used behind onboarding and login.
     static var glowBackground: some View {
         ZStack {
             backgroundBase
@@ -120,7 +118,7 @@ extension Font {
     static let emberPageTitle = Font.system(.title2).weight(.bold)
     /// Big hero titles (playlist header, Now Playing title). One step smaller on 4-inch screens.
     static let emberHero = Font.system(ScreenMetrics.isCompact ? .title2 : .title).weight(.bold)
-    /// The largest titles (onboarding, the paywall, naming a playlist). One step smaller on
+    /// The largest titles (onboarding, naming a playlist). One step smaller on
     /// 4-inch screens, where `.largeTitle` wraps to three lines.
     static let emberDisplay = Font.system(ScreenMetrics.isCompact ? .title : .largeTitle).weight(.bold)
     /// Section headings on Home.
