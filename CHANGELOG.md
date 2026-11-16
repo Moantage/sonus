@@ -2,6 +2,13 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-11-16 — Sample tracks for app review and testers
+
+- Three 20-second test tracks at `/samples/sonus-sample-{1,2,3}.mp3` on the docs site
+  ("Morning Drone", "Evening Chord", "Night Hum"). They're synthesised sine-wave chords made with
+  ffmpeg for this project, so anyone can download one in Safari and import it. The TestFlight
+  review notes link to them.
+
 ## 2026-11-16 — Build 6 for TestFlight
 
 - Build number 5 → 6. Build 6 is the first build with the real privacy policy and terms links and
