@@ -54,10 +54,10 @@ struct PlaybackScrubber: View {
                 Spacer()
                 Text("-" + max(duration - progress * duration, 0).mmssString)
             }
-            .font(.system(.caption, weight: isDragging ? .bold : .medium).monospacedDigit())
+            .font(.system(.caption).weight(isDragging ? .bold : .medium).monospacedDigit())
             .foregroundStyle(isDragging ? Theme.textPrimary : Theme.textSubtle)
         }
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.6), trigger: isDragging)
+        .haptic(.soft(0.6), trigger: isDragging)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Track position")
         .accessibilityValue("\(currentTime.mmssString) of \(duration.mmssString)")
@@ -105,7 +105,7 @@ struct QueueSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
+        CompatNavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
                     if let current = player.currentSong {
@@ -144,10 +144,7 @@ struct QueueSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Theme.backgroundElevated)
-        .presentationCornerRadius(20)
+        .emberSheet(detents: [.medium, .large], showsGrabber: true, background: Theme.backgroundElevated, cornerRadius: 20)
     }
 
     private func row(_ song: Song) -> some View {

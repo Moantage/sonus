@@ -49,7 +49,7 @@ enum AdConfig {
         return 20 * 60
     }
     /// An app open ad that isn't ready this soon after launch is skipped, not shown late.
-    static let appOpenLoadTimeout: Duration = .seconds(4)
+    static let appOpenLoadTimeout: TimeInterval = 4
     /// App open ads expire after four hours.
     static let appOpenAdLifetime: TimeInterval = 4 * 60 * 60
 
@@ -153,9 +153,9 @@ final class FullScreenAdController: NSObject, ObservableObject, FullScreenConten
         if ATTrackingManager.trackingAuthorizationStatus == .notDetermined {
             // iOS only shows the prompt once the app is fully active.
             for _ in 0..<50 where UIApplication.shared.applicationState != .active {
-                try? await Task.sleep(for: .milliseconds(100))
+                try? await Task.sleep(seconds: 0.1)
             }
-            try? await Task.sleep(for: .milliseconds(500))
+            try? await Task.sleep(seconds: 0.5)
             _ = await ATTrackingManager.requestTrackingAuthorization()
             loadInterstitialIfNeeded()
             return
@@ -164,10 +164,10 @@ final class FullScreenAdController: NSObject, ObservableObject, FullScreenConten
         await store?.refreshEntitlements()
         guard adsAllowed else { return }
 
-        let deadline = ContinuousClock.now + AdConfig.appOpenLoadTimeout
+        let deadline = ProcessInfo.processInfo.systemUptime + AdConfig.appOpenLoadTimeout
         loadAppOpenIfNeeded()
-        while appOpenAd == nil, isLoadingAppOpen, ContinuousClock.now < deadline {
-            try? await Task.sleep(for: .milliseconds(100))
+        while appOpenAd == nil, isLoadingAppOpen, ProcessInfo.processInfo.systemUptime < deadline {
+            try? await Task.sleep(seconds: 0.1)
         }
         if let readyAd = appOpenAd, adsAllowed, UIApplication.shared.applicationState == .active {
             present(readyAd)

@@ -18,7 +18,7 @@ struct SearchView: View {
     }
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
                 TabHeader(title: "Search")
                 searchField
@@ -29,14 +29,13 @@ struct SearchView: View {
                     results
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, ScreenMetrics.pageMargin)
             .padding(.top, 8)
             .padding(.bottom, 24)
         }
-        .scrollIndicators(.hidden)
-        .scrollDismissesKeyboard(.immediately)
+        .dismissesKeyboardOnScroll()
         .background(Theme.backgroundBase)
-        .toolbar(.hidden, for: .navigationBar)
+        .hidesNavigationBar()
     }
 
     private var searchField: some View {
@@ -49,9 +48,9 @@ struct SearchView: View {
             TextField(
                 "Search your library",
                 text: $query,
-                prompt: Text("What do you want to listen to?").foregroundStyle(Theme.accentInk.opacity(0.55))
+                prompt: Text("What do you want to listen to?").foregroundColor(Theme.accentInk.opacity(0.55))
             )
-            .font(.system(.body, weight: .medium))
+            .font(.system(.body).weight(.medium))
             .foregroundStyle(Theme.accentInk)
             .tint(Theme.accentInk)
             .textInputAutocapitalization(.never)
@@ -84,7 +83,7 @@ struct SearchView: View {
             + libraryStore.playlists.map { .playlist($0.id) }
         return VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Browse your library")
-            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 ForEach(collections, id: \.self) { collection in
                     BrowseTile(collection: collection)
                 }
@@ -99,7 +98,7 @@ struct SearchView: View {
         if songResults.isEmpty && playlistResults.isEmpty {
             VStack(spacing: 8) {
                 Text("Couldn't find “\(trimmedQuery)”")
-                    .font(.system(.headline, weight: .bold))
+                    .font(.system(.headline).weight(.bold))
                     .foregroundStyle(Theme.textPrimary)
                 Text("Try another song, album or artist.")
                     .font(.subheadline)
@@ -133,16 +132,20 @@ private struct BrowseTile: View {
             ZStack(alignment: .topLeading) {
                 tileColor
                 Text(collection.title(in: libraryStore))
-                    .font(.system(.headline, weight: .bold))
+                    .font(.system(ScreenMetrics.isCompact ? .subheadline : .headline).weight(.bold))
                     .foregroundStyle(Theme.textPrimary)
                     .multilineTextAlignment(.leading)
                     .lineLimit(2)
-                    .padding(12)
-                    .padding(.trailing, 36)
+                    .padding(ScreenMetrics.isCompact ? 10 : 12)
+                    .padding(.trailing, ScreenMetrics.isCompact ? 26 : 36)
             }
-            .frame(height: 96)
+            .frame(height: ScreenMetrics.browseTileHeight)
             .overlay(alignment: .bottomTrailing) {
-                CollectionArtwork(collection: collection, songs: collection.songs(in: libraryStore), size: 58)
+                CollectionArtwork(
+                    collection: collection,
+                    songs: collection.songs(in: libraryStore),
+                    size: ScreenMetrics.isCompact ? 50 : 58
+                )
                     .rotationEffect(.degrees(24))
                     .shadow(color: .black.opacity(0.3), radius: 6, y: 3)
                     .offset(x: 14, y: 4)

@@ -16,8 +16,8 @@ struct SongRow: View {
     var body: some View {
         HStack(spacing: 4) {
             Button(action: onTap) {
-                HStack(spacing: 12) {
-                    SongArtwork(id: song.id, image: isCurrent ? artwork : nil, size: 48)
+                HStack(spacing: ScreenMetrics.isCompact ? 10 : 12) {
+                    SongArtwork(id: song.id, image: isCurrent ? artwork : nil, size: ScreenMetrics.songRowArtwork)
 
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
@@ -197,7 +197,7 @@ struct SongActionsSheet: View {
             )
             VStack(alignment: .leading, spacing: 3) {
                 Text(song.title)
-                    .font(.system(.body, weight: .semibold))
+                    .font(.system(.body).weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(2)
                 Text(song.displayArtist)
@@ -213,7 +213,7 @@ struct SongActionsSheet: View {
     private var actions: some View {
         VStack(spacing: 0) {
             SheetActionRow(icon: "plus.circle", title: "Add to playlist") {
-                withAnimation(.snappy) { isPickingPlaylist = true }
+                withAnimation(Theme.Motion.snappy) { isPickingPlaylist = true }
             }
 
             if let playlist {
@@ -259,10 +259,10 @@ struct SongActionsSheet: View {
     private var playlistPicker: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.snappy) { isPickingPlaylist = false }
+                withAnimation(Theme.Motion.snappy) { isPickingPlaylist = false }
             } label: {
                 Label("Add to playlist", systemImage: "chevron.left")
-                    .font(.system(.headline, weight: .bold))
+                    .font(.system(.headline).weight(.bold))
                     .foregroundStyle(Theme.textPrimary)
                     .frame(minHeight: 44)
             }
@@ -273,7 +273,7 @@ struct SongActionsSheet: View {
                 dismiss()
                 Task {
                     // Let the sheet finish dismissing before the full-screen flow appears.
-                    try? await Task.sleep(for: .milliseconds(400))
+                    try? await Task.sleep(seconds: 0.4)
                     shell.startCreatingPlaylist(adding: song)
                 }
             }
@@ -340,17 +340,12 @@ private struct FittedSheetModifier: ViewModifier {
     func body(content: Content) -> some View {
         ScrollView {
             content
-                .onGeometryChange(for: CGFloat.self) { proxy in
-                    proxy.size.height
-                } action: { height in
+                .reportsFittedSheetHeight { height in
                     contentHeight = height
                 }
         }
-        .scrollBounceBehavior(.basedOnSize)
-        .presentationDetents([.height(contentHeight)])
-        .presentationDragIndicator(.visible)
-        .presentationBackground(Theme.backgroundElevated)
-        .presentationCornerRadius(20)
+        .bouncesOnlyWhenScrollable()
+        .emberSheet(detents: [.height(contentHeight)], showsGrabber: true, background: Theme.backgroundElevated, cornerRadius: 20)
     }
 }
 

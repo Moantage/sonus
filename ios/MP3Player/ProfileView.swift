@@ -32,8 +32,8 @@ struct ProfileView: View {
     }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: ScreenMetrics.sectionSpacing) {
                 header
 
                 if !isPremium {
@@ -46,21 +46,20 @@ struct ProfileView: View {
                 securitySection
                 signOutSection
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, ScreenMetrics.pageMargin)
             .padding(.bottom, 32)
         }
-        .scrollIndicators(.hidden)
         .background(Theme.backgroundBase)
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Theme.backgroundBase, for: .navigationBar)
+        .navigationBarBackground(Theme.backgroundBase)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button(isEditing ? "Cancel" : "Edit") {
                     if isEditing { loadUserData() }
-                    withAnimation(.snappy) { isEditing.toggle() }
+                    withAnimation(Theme.Motion.snappy) { isEditing.toggle() }
                 }
-                .fontWeight(.semibold)
+                .font(.body.weight(.semibold))
             }
         }
         .alert("Profile", isPresented: $showAlert) {
@@ -92,7 +91,12 @@ struct ProfileView: View {
         .sheet(isPresented: $showPlaybackControls) {
             AdvancedControlsSheet()
         }
-        .onAppear { loadUserData() }
+        .onAppear {
+            loadUserData()
+            #if DEBUG
+            if UIReviewScreen.requested == .paywall { showPaywall = true }
+            #endif
+        }
     }
 
     // MARK: - Header
@@ -102,7 +106,7 @@ struct ProfileView: View {
             ZStack(alignment: .topTrailing) {
                 RoundedRectangle(cornerRadius: Theme.Radius.tile, style: .continuous)
                     .fill(ProfileBanner.banner(for: authManager.currentUser?.profileBanner).gradient)
-                    .frame(height: 128)
+                    .frame(height: ScreenMetrics.isCompact ? 104 : 128)
 
                 Button {
                     if isPremium { showBannerPicker = true } else { showPaywall = true }
@@ -119,14 +123,14 @@ struct ProfileView: View {
                 .padding(4)
             }
 
-            AvatarView(initials: initials, size: 88)
+            AvatarView(initials: initials, size: ScreenMetrics.isCompact ? 72 : 88)
                 .overlay(Circle().stroke(Theme.backgroundBase, lineWidth: 4))
-                .padding(.top, -56)
+                .padding(.top, ScreenMetrics.isCompact ? -46 : -56)
                 .accessibilityHidden(true)
 
             VStack(spacing: 4) {
                 Text(displayName)
-                    .font(.system(.title2, weight: .bold))
+                    .font(.system(.title2).weight(.bold))
                     .foregroundStyle(Theme.textPrimary)
                 if !email.isEmpty {
                     Text(email)
@@ -138,14 +142,14 @@ struct ProfileView: View {
 
             if isPremium {
                 Label(store.hasLifetime ? "Premium · Lifetime" : "Premium", systemImage: "crown.fill")
-                    .font(.system(.caption, weight: .bold))
+                    .font(.system(.caption).weight(.bold))
                     .foregroundStyle(Theme.premiumGold)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 5)
                     .background(Theme.premiumGoldWell, in: Capsule())
             } else {
                 Text("Free plan")
-                    .font(.system(.caption, weight: .semibold))
+                    .font(.system(.caption).weight(.semibold))
                     .foregroundStyle(Theme.textSubtle)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 5)
@@ -169,7 +173,7 @@ struct ProfileView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Go Premium")
-                        .font(.system(.headline, weight: .bold))
+                        .font(.system(.headline).weight(.bold))
                         .foregroundStyle(Theme.textPrimary)
                     Text("High-quality audio, profile banners, sync and no ads")
                         .font(.footnote)
@@ -338,7 +342,7 @@ extension ProfileView {
             Button("Delete account") {
                 showDeleteConfirmation = true
             }
-            .font(.system(.subheadline, weight: .semibold))
+            .font(.system(.subheadline).weight(.semibold))
             .foregroundStyle(Theme.error)
             .frame(minHeight: 44)
 

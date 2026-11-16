@@ -117,17 +117,20 @@ enum Theme {
 /// Bold SF Pro, mapped to Dynamic Type text styles so every screen scales.
 extension Font {
     /// Page titles ("Your Library", "Search").
-    static let emberPageTitle = Font.system(.title2, weight: .bold)
-    /// Big hero titles (playlist header, Now Playing title).
-    static let emberHero = Font.system(.title, weight: .bold)
+    static let emberPageTitle = Font.system(.title2).weight(.bold)
+    /// Big hero titles (playlist header, Now Playing title). One step smaller on 4-inch screens.
+    static let emberHero = Font.system(ScreenMetrics.isCompact ? .title2 : .title).weight(.bold)
+    /// The largest titles (onboarding, the paywall, naming a playlist). One step smaller on
+    /// 4-inch screens, where `.largeTitle` wraps to three lines.
+    static let emberDisplay = Font.system(ScreenMetrics.isCompact ? .title : .largeTitle).weight(.bold)
     /// Section headings on Home.
-    static let emberSection = Font.system(.title3, weight: .bold)
+    static let emberSection = Font.system(.title3).weight(.bold)
     /// Row titles.
-    static let emberRowTitle = Font.system(.body, weight: .medium)
+    static let emberRowTitle = Font.system(.body).weight(.medium)
     /// Row subtitles and captions.
     static let emberRowSubtitle = Font.system(.subheadline)
     /// Labels on pill buttons.
-    static let emberButton = Font.system(.callout, weight: .bold)
+    static let emberButton = Font.system(.callout).weight(.bold)
 }
 
 // MARK: - Color hex helper
@@ -266,7 +269,7 @@ struct PillButtonStyle: ButtonStyle {
         configuration.label
             .font(.emberButton)
             .foregroundStyle(foreground)
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .frame(maxWidth: .infinity, minHeight: ScreenMetrics.pillHeight)
             .padding(.horizontal, 20)
             .background(background, in: Capsule())
             .overlay {
@@ -311,7 +314,7 @@ struct ThemedField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(label)
-                .font(.system(.subheadline, weight: .semibold))
+                .font(.system(.subheadline).weight(.semibold))
                 .foregroundStyle(Theme.textPrimary)
 
             Group {
@@ -330,7 +333,7 @@ struct ThemedField: View {
             .foregroundStyle(Theme.textPrimary)
             .tint(Theme.accent)
             .padding(.horizontal, 14)
-            .frame(minHeight: 50)
+            .frame(minHeight: ScreenMetrics.isCompact ? 46 : 50)
             .background(Theme.surfaceRaised, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
@@ -383,7 +386,7 @@ struct FilterPill: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(.subheadline, weight: .medium))
+                .font(.system(.subheadline).weight(.medium))
                 .foregroundStyle(isSelected ? Theme.accentInk : Theme.textPrimary)
                 .padding(.horizontal, 14)
                 .frame(minHeight: 34)
@@ -423,7 +426,7 @@ struct SectionHeader: View {
             Spacer(minLength: 8)
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
-                    .font(.system(.footnote, weight: .semibold))
+                    .font(.system(.footnote).weight(.semibold))
                     .foregroundStyle(Theme.textSubtle)
             }
         }

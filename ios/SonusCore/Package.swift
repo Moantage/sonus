@@ -5,7 +5,7 @@ import PackageDescription
 // Linux CI. The iOS app will depend on this package as sources move in.
 let package = Package(
     name: "SonusCore",
-    platforms: [.iOS(.v17), .macOS(.v14)],
+    platforms: [.iOS(.v15), .macOS(.v14)],
     products: [
         .library(name: "SonusCore", targets: ["SonusCore"])
     ],

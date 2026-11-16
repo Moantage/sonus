@@ -17,13 +17,15 @@ struct SongCollectionView: View {
     @State private var isConfirmingDeletePlaylist = false
     @State private var isConfirmingRemoveDownloads = false
 
+    private static let scrollSpace = "SongCollectionView.scroll"
+
     private var songs: [Song] { collection.songs(in: libraryStore) }
     private var title: String { collection.title(in: libraryStore) }
     private var context: PlayContext { .collection(collection, in: libraryStore) }
     private var playlist: Playlist? { libraryStore.playlist(with: collection.playlistID) }
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 header
                 actionRow
@@ -36,16 +38,18 @@ struct SongCollectionView: View {
                     SongList(songs: songs, context: context)
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, ScreenMetrics.pageMargin)
             .padding(.bottom, 24)
             .background(alignment: .top) { headerGlow }
         }
-        .scrollIndicators(.hidden)
+        .coordinateSpace(name: Self.scrollSpace)
+        .onPreferenceChange(TitleScrolledPastKey.self) { isScrolledPast in
+            showsTitleInBar = isScrolledPast
+        }
         .background(Theme.backgroundBase)
         .navigationTitle(showsTitleInBar ? title : "")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(Theme.backgroundElevated, for: .navigationBar)
-        .toolbarBackground(showsTitleInBar ? .visible : .hidden, for: .navigationBar)
+        .navigationBarBackground(Theme.backgroundElevated, visibility: showsTitleInBar ? .visible : .hidden)
         .animation(.easeOut(duration: 0.2), value: showsTitleInBar)
         .sheet(isPresented: $isActionsSheetPresented) { playlistActionsSheet }
         .sheet(isPresented: $isAddSongsPresented) {
@@ -76,7 +80,7 @@ struct SongCollectionView: View {
         } message: {
             Text("The songs stay in your library and you can download them again.")
         }
-        .onChange(of: libraryStore.playlists) { _, playlists in
+        .onChange(of: libraryStore.playlists) { playlists in
             // The playlist was deleted (here or by sync): leave its page.
             if let id = collection.playlistID, !playlists.contains(where: { $0.id == id }) {
                 dismiss()
@@ -94,13 +98,13 @@ struct SongCollectionView: View {
             endPoint: .bottom
         )
         .frame(height: 520)
-        .padding(.horizontal, -16)
+        .padding(.horizontal, -ScreenMetrics.pageMargin)
         .offset(y: -200)
     }
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            CollectionArtwork(collection: collection, songs: songs, size: 232)
+            CollectionArtwork(collection: collection, songs: songs, size: ScreenMetrics.collectionArtwork)
                 .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.hero, style: .continuous))
                 .shadow(color: .black.opacity(0.5), radius: 28, y: 16)
                 .frame(maxWidth: .infinity)
@@ -112,11 +116,15 @@ struct SongCollectionView: View {
                 .foregroundStyle(Theme.textPrimary)
                 .lineLimit(3)
                 .accessibilityAddTraits(.isHeader)
-                .onGeometryChange(for: Bool.self) { proxy in
-                    proxy.frame(in: .scrollView).maxY < 0
-                } action: { isScrolledPast in
-                    showsTitleInBar = isScrolledPast
-                }
+                .background(
+                    // Once the title scrolls out of view, it moves into the navigation bar.
+                    GeometryReader { proxy in
+                        Color.clear.preference(
+                            key: TitleScrolledPastKey.self,
+                            value: proxy.frame(in: .named(Self.scrollSpace)).maxY < 0
+                        )
+                    }
+                )
 
             Text(metadata)
                 .font(.subheadline)
@@ -165,7 +173,7 @@ struct SongCollectionView: View {
                     Image(systemName: "shuffle")
                         .font(.system(size: 22, weight: .semibold))
                         .foregroundStyle(Theme.textPrimary)
-                        .symbolEffect(.bounce, value: shell.shuffleRequestCount)
+                        .symbolBounce(value: shell.shuffleRequestCount)
                         .frame(width: 48, height: 48)
                         .contentShape(Rectangle())
                 }
@@ -182,7 +190,7 @@ struct SongCollectionView: View {
                     Image(systemName: isPlaying ? "pause.fill" : "play.fill")
                         .font(.system(size: 22, weight: .bold))
                         .foregroundStyle(Theme.accentInk)
-                        .contentTransition(.symbolEffect(.replace))
+                        .symbolReplaceTransition()
                         .frame(width: 58, height: 58)
                         .background(Theme.playGradient, in: Circle())
                         .shadow(color: Theme.accent.opacity(0.4), radius: 14, y: 5)
@@ -213,7 +221,7 @@ struct SongCollectionView: View {
                     Image(systemName: status.allOnDevice ? "arrow.down.circle.fill" : "arrow.down.circle")
                         .font(.system(size: 26, weight: .regular))
                         .foregroundStyle(status.allOnDevice ? Theme.accent : Theme.textSubtle)
-                        .contentTransition(.symbolEffect(.replace))
+                        .symbolReplaceTransition()
                 }
             }
             .frame(width: 44, height: 44)
@@ -221,10 +229,10 @@ struct SongCollectionView: View {
         }
         .buttonStyle(.pressable)
         .disabled(status.isDownloading)
-        .sensoryFeedback(.success, trigger: status.allOnDevice) { _, isOn in isOn }
+        .haptic(.success, trigger: status.allOnDevice) { isOn in isOn }
         .accessibilityLabel("Download")
         .accessibilityValue(status.isDownloading ? "Downloading" : (status.allOnDevice ? "On this device" : "Not downloaded"))
-        .accessibilityAddTraits(.isToggle)
+        .accessibilityToggleTrait()
     }
 
     private func toggleDownloads(allOnDevice: Bool) {
@@ -256,7 +264,7 @@ struct SongCollectionView: View {
     private var emptyState: some View {
         VStack(spacing: 14) {
             Text(collection.playlistID == nil ? "Nothing here yet" : "Let's find songs for your playlist")
-                .font(.system(.title3, weight: .bold))
+                .font(.system(.title3).weight(.bold))
                 .foregroundStyle(Theme.textPrimary)
                 .multilineTextAlignment(.center)
             if playlist != nil {
@@ -281,7 +289,7 @@ struct SongCollectionView: View {
             HStack(spacing: 12) {
                 CollectionArtwork(collection: collection, songs: songs, size: 48)
                 Text(title)
-                    .font(.system(.body, weight: .semibold))
+                    .font(.system(.body).weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(2)
             }
@@ -293,14 +301,14 @@ struct SongCollectionView: View {
             SheetActionRow(icon: "plus.circle", title: "Add songs") {
                 isActionsSheetPresented = false
                 Task {
-                    try? await Task.sleep(for: .milliseconds(400))
+                    try? await Task.sleep(seconds: 0.4)
                     isAddSongsPresented = true
                 }
             }
             SheetActionRow(icon: "trash", title: "Delete playlist", role: .destructive) {
                 isActionsSheetPresented = false
                 Task {
-                    try? await Task.sleep(for: .milliseconds(400))
+                    try? await Task.sleep(seconds: 0.4)
                     isConfirmingDeletePlaylist = true
                 }
             }
@@ -309,6 +317,15 @@ struct SongCollectionView: View {
         .padding(.top, 28)
         .padding(.bottom, 12)
         .fittedSheet()
+    }
+}
+
+/// Whether a collection page's title has scrolled out of view.
+private struct TitleScrolledPastKey: PreferenceKey {
+    static let defaultValue = false
+
+    static func reduce(value: inout Bool, nextValue: () -> Bool) {
+        value = value || nextValue()
     }
 }
 
@@ -323,7 +340,7 @@ struct AddSongsSheet: View {
     private var playlist: Playlist? { libraryStore.playlist(with: playlistID) }
 
     var body: some View {
-        NavigationStack {
+        CompatNavigationStack {
             ScrollView {
                 LazyVStack(spacing: 2) {
                     ForEach(LibrarySearch.rank(query, in: libraryStore.songs)) { song in
@@ -343,9 +360,7 @@ struct AddSongsSheet: View {
                 }
             }
         }
-        .presentationDetents([.large])
-        .presentationBackground(Theme.backgroundElevated)
-        .presentationCornerRadius(20)
+        .emberSheet(detents: [.large], background: Theme.backgroundElevated, cornerRadius: 20)
     }
 
     private func row(_ song: Song) -> some View {
@@ -374,13 +389,13 @@ struct AddSongsSheet: View {
                 Image(systemName: isIn ? "checkmark.circle.fill" : "plus.circle")
                     .font(.system(size: 24))
                     .foregroundStyle(isIn ? Theme.accent : Theme.textSubtle)
-                    .contentTransition(.symbolEffect(.replace))
+                    .symbolReplaceTransition()
             }
             .padding(.vertical, 4)
             .contentShape(Rectangle())
         }
         .buttonStyle(PressableButtonStyle(scale: 0.98))
-        .sensoryFeedback(.selection, trigger: isIn)
+        .haptic(.selection, trigger: isIn)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(song.title), \(song.displayArtist)")
         .accessibilityValue(isIn ? "In playlist" : "Not in playlist")

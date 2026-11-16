@@ -20,13 +20,13 @@ struct HomeView: View {
     private var heroSong: Song? { jumpBackSong ?? recentSongs.first }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: ScreenMetrics.sectionSpacing) {
                 VStack(alignment: .leading, spacing: 2) {
                     TabHeader(title: greeting)
                     if !libraryStore.songs.isEmpty {
                         Text(librarySummary)
-                            .font(.system(.subheadline, weight: .medium))
+                            .font(.system(.subheadline).weight(.medium))
                             .foregroundStyle(Theme.textSubtle)
                             .padding(.leading, 46)
                     }
@@ -42,14 +42,13 @@ struct HomeView: View {
                     playlistsSection
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, ScreenMetrics.pageMargin)
             .padding(.top, 8)
             .padding(.bottom, 24)
         }
-        .scrollIndicators(.hidden)
         .background(alignment: .top) { ambientGlow }
         .background(Theme.backgroundBase)
-        .toolbar(.hidden, for: .navigationBar)
+        .hidesNavigationBar()
     }
 
     /// The top of Home takes on the colour of the featured song.
@@ -110,7 +109,7 @@ struct HomeView: View {
                 shell.push(.collection(.recentlyAdded))
             }
 
-            ScrollView(.horizontal) {
+            ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: 14) {
                     ForEach(recentSongs.prefix(12)) { song in
                         SongCard(song: song) {
@@ -123,10 +122,9 @@ struct HomeView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, ScreenMetrics.pageMargin)
             }
-            .scrollIndicators(.hidden)
-            .padding(.horizontal, -16)
+            .padding(.horizontal, -ScreenMetrics.pageMargin)
         }
     }
 
@@ -138,17 +136,16 @@ struct HomeView: View {
                 shell.selectedTab = .library
             }
 
-            ScrollView(.horizontal) {
+            ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: 14) {
                     ForEach(libraryStore.playlists) { playlist in
                         PlaylistCard(playlist: playlist)
                     }
                     NewPlaylistCard()
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, ScreenMetrics.pageMargin)
             }
-            .scrollIndicators(.hidden)
-            .padding(.horizontal, -16)
+            .padding(.horizontal, -ScreenMetrics.pageMargin)
         }
     }
 }
@@ -170,9 +167,9 @@ private struct ShortcutTile: View {
             shell.push(.collection(collection))
         } label: {
             HStack(spacing: 10) {
-                CollectionArtwork(collection: collection, songs: collection.songs(in: libraryStore), size: 56)
+                CollectionArtwork(collection: collection, songs: collection.songs(in: libraryStore), size: ScreenMetrics.shortcutArtwork)
                 Text(collection.title(in: libraryStore))
-                    .font(.system(.footnote, weight: .bold))
+                    .font(.system(.footnote).weight(.bold))
                     .foregroundStyle(isPlaying ? Theme.accent : Theme.textPrimary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
@@ -182,7 +179,7 @@ private struct ShortcutTile: View {
                         .padding(.trailing, 10)
                 }
             }
-            .frame(minHeight: 56)
+            .frame(minHeight: ScreenMetrics.shortcutArtwork)
             .background(Theme.surfaceRaised, in: RoundedRectangle(cornerRadius: Theme.Radius.artwork, style: .continuous))
             .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.artwork, style: .continuous))
             .overlay {
@@ -207,14 +204,19 @@ private struct SongCard: View {
         let isCurrent = player.currentSong?.id == song.id
         Button(action: action) {
             VStack(alignment: .leading, spacing: 6) {
-                SongArtwork(id: song.id, image: isCurrent ? player.artworkImage : nil, size: 150, cornerRadius: Theme.Radius.artwork)
+                SongArtwork(
+                    id: song.id,
+                    image: isCurrent ? player.artworkImage : nil,
+                    size: ScreenMetrics.carouselCard,
+                    cornerRadius: Theme.Radius.artwork
+                )
                     .shadow(color: .black.opacity(0.35), radius: 10, y: 6)
                     .overlay(alignment: .bottomTrailing) {
                         if isCurrent {
                             Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                                 .font(.system(size: 14, weight: .bold))
                                 .foregroundStyle(Theme.accentInk)
-                                .contentTransition(.symbolEffect(.replace))
+                                .symbolReplaceTransition()
                                 .frame(width: 34, height: 34)
                                 .background(Theme.accent, in: Circle())
                                 .shadow(color: .black.opacity(0.3), radius: 6, y: 2)
@@ -226,7 +228,7 @@ private struct SongCard: View {
                 HStack(spacing: 5) {
                     if isCurrent { EqualizerBars(isAnimating: player.isPlaying, height: 10) }
                     Text(song.title)
-                        .font(.system(.subheadline, weight: .semibold))
+                        .font(.system(.subheadline).weight(.semibold))
                         .foregroundStyle(isCurrent ? Theme.accent : Theme.textPrimary)
                         .lineLimit(1)
                 }
@@ -235,7 +237,7 @@ private struct SongCard: View {
                     .foregroundStyle(Theme.textSubtle)
                     .lineLimit(1)
             }
-            .frame(width: 150, alignment: .leading)
+            .frame(width: ScreenMetrics.carouselCard, alignment: .leading)
         }
         .buttonStyle(.pressable)
         .accessibilityElement(children: .ignore)
@@ -259,17 +261,17 @@ private struct PlaylistCard: View {
             shell.push(.collection(collection))
         } label: {
             VStack(alignment: .leading, spacing: 6) {
-                CollectionArtwork(collection: collection, songs: collection.songs(in: libraryStore), size: 150)
+                CollectionArtwork(collection: collection, songs: collection.songs(in: libraryStore), size: ScreenMetrics.carouselCard)
                     .shadow(color: .black.opacity(0.35), radius: 10, y: 6)
                 Text(playlist.name)
-                    .font(.system(.subheadline, weight: .semibold))
+                    .font(.system(.subheadline).weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
                     .lineLimit(1)
                 Text(playlist.songIDs.count == 1 ? "1 song" : "\(playlist.songIDs.count) songs")
                     .font(.footnote)
                     .foregroundStyle(Theme.textSubtle)
             }
-            .frame(width: 150, alignment: .leading)
+            .frame(width: ScreenMetrics.carouselCard, alignment: .leading)
         }
         .buttonStyle(.pressable)
         .accessibilityElement(children: .combine)
@@ -288,17 +290,17 @@ private struct NewPlaylistCard: View {
                 Image(systemName: "plus")
                     .font(.system(size: 40, weight: .light))
                     .foregroundStyle(Theme.textSubtle)
-                    .frame(width: 150, height: 150)
+                    .frame(width: ScreenMetrics.carouselCard, height: ScreenMetrics.carouselCard)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.artwork, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: Theme.Radius.artwork, style: .continuous)
                             .strokeBorder(Theme.hairline, style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
                     }
                 Text("New playlist")
-                    .font(.system(.subheadline, weight: .semibold))
+                    .font(.system(.subheadline).weight(.semibold))
                     .foregroundStyle(Theme.textPrimary)
             }
-            .frame(width: 150, alignment: .leading)
+            .frame(width: ScreenMetrics.carouselCard, alignment: .leading)
         }
         .buttonStyle(.pressable)
         .accessibilityLabel("New playlist")
@@ -318,6 +320,8 @@ private struct HomeHeroCard: View {
 
     private var isCurrent: Bool { player.currentSong?.id == song.id }
     private var image: UIImage? { isCurrent ? player.artworkImage : nil }
+    /// The artwork's colour: measured for the playing song, the cover's own colour otherwise.
+    private var tint: UIColor { isCurrent ? shell.artworkTint : ArtworkPalette.baseColor(for: song.id) }
 
     private var eyebrow: String {
         if isCurrent { return player.isPlaying ? "Now playing" : "Paused" }
@@ -330,10 +334,10 @@ private struct HomeHeroCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .bottom, spacing: 16) {
+        VStack(alignment: .leading, spacing: ScreenMetrics.isCompact ? 14 : 18) {
+            HStack(alignment: .bottom, spacing: ScreenMetrics.isCompact ? 12 : 16) {
                 Button(action: openOrPlay) {
-                    SongArtwork(id: song.id, image: image, size: 116, cornerRadius: 12)
+                    SongArtwork(id: song.id, image: image, size: ScreenMetrics.heroArtwork, cornerRadius: 12)
                         .shadow(color: .black.opacity(0.45), radius: 16, y: 10)
                         .scaleEffect(isCurrent && !player.isPlaying ? 0.94 : 1)
                         .animation(Theme.Motion.bounce, value: player.isPlaying)
@@ -345,18 +349,18 @@ private struct HomeHeroCard: View {
                     HStack(spacing: 6) {
                         if isCurrent { EqualizerBars(isAnimating: player.isPlaying, height: 10) }
                         Text(eyebrow.uppercased())
-                            .font(.system(.caption2, weight: .bold))
+                            .font(.system(.caption2).weight(.bold))
                             .tracking(1.2)
                             .foregroundStyle(Theme.accentLight)
-                            .contentTransition(.opacity)
+                            .opacityContentTransition()
                     }
                     Text(song.title)
-                        .font(.system(.title2, weight: .bold))
+                        .font(.system(ScreenMetrics.isCompact ? .title3 : .title2).weight(.bold))
                         .foregroundStyle(Theme.textPrimary)
                         .lineLimit(2)
                         .minimumScaleFactor(0.85)
                     Text(song.displayArtist)
-                        .font(.system(.subheadline, weight: .medium))
+                        .font(.system(.subheadline).weight(.medium))
                         .foregroundStyle(Theme.textSubtle)
                         .lineLimit(1)
                 }
@@ -367,7 +371,7 @@ private struct HomeHeroCard: View {
             HStack(spacing: 10) {
                 Button(action: primaryAction) {
                     Label(primaryTitle, systemImage: isCurrent && player.isPlaying ? "pause.fill" : "play.fill")
-                        .contentTransition(.symbolEffect(.replace))
+                        .symbolReplaceTransition()
                         .font(.emberButton)
                         .foregroundStyle(Theme.accentInk)
                         .frame(maxWidth: .infinity, minHeight: 48)
@@ -380,7 +384,7 @@ private struct HomeHeroCard: View {
                     shell.shufflePlay(libraryStore.songs, context: .library, player: player)
                 } label: {
                     Label("Shuffle all", systemImage: "shuffle")
-                        .symbolEffect(.bounce, value: shell.shuffleRequestCount)
+                        .symbolBounce(value: shell.shuffleRequestCount)
                         .font(.emberButton)
                         .foregroundStyle(Theme.textPrimary)
                         .frame(maxWidth: .infinity, minHeight: 48)
@@ -391,7 +395,7 @@ private struct HomeHeroCard: View {
                 .accessibilityHint("Plays your whole library in a random order")
             }
         }
-        .padding(16)
+        .padding(ScreenMetrics.isCompact ? 14 : 16)
         .background { backdrop }
         .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.tile, style: .continuous))
         .overlay {
@@ -403,21 +407,30 @@ private struct HomeHeroCard: View {
         .animation(Theme.Motion.snappy, value: player.isPlaying)
     }
 
-    /// The song's own artwork, blurred into a coloured light behind the card.
+    /// The song's own artwork, blurred into a coloured light behind the card. Older hardware gets
+    /// a gradient in the artwork's colour, so scrolling Home doesn't re-blur it every frame.
     private var backdrop: some View {
         ZStack {
             Theme.backgroundElevated
-            Group {
-                if let image {
-                    Image(uiImage: image).resizable().scaledToFill()
-                } else {
-                    GenerativeCover(id: song.id)
+            if DeviceProfile.prefersLightEffects {
+                LinearGradient(
+                    colors: [ArtworkPalette.backdrop(from: tint, brightness: 0.4...0.58), Theme.backgroundElevated],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            } else {
+                Group {
+                    if let image {
+                        Image(uiImage: image).resizable().scaledToFill()
+                    } else {
+                        GenerativeCover(id: song.id)
+                    }
                 }
+                .scaleEffect(1.6)
+                .blur(radius: 40)
+                .saturation(1.2)
+                .opacity(0.85)
             }
-            .scaleEffect(1.6)
-            .blur(radius: 40)
-            .saturation(1.2)
-            .opacity(0.85)
             LinearGradient(
                 colors: [.black.opacity(0.05), .black.opacity(0.5)],
                 startPoint: .top,
@@ -454,7 +467,7 @@ struct EmptyLibraryCard: View {
         VStack(alignment: .leading, spacing: 14) {
             WaveformMark(size: 44)
             Text("Your library is empty")
-                .font(.system(.title3, weight: .bold))
+                .font(.system(.title3).weight(.bold))
                 .foregroundStyle(Theme.textPrimary)
             Text("Import songs from the Files app, including shared folders on your NAS that you've connected there.")
                 .font(.subheadline)

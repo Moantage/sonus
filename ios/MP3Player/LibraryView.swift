@@ -18,7 +18,7 @@ struct LibraryView: View {
     @State private var isAddSheetPresented = false
 
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
                 TabHeader(title: "Your Library") {
                     HeaderIconButton(systemImage: "plus", label: "Create playlist or import music") {
@@ -30,27 +30,26 @@ struct LibraryView: View {
 
                 content
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, ScreenMetrics.pageMargin)
             .padding(.top, 8)
             .padding(.bottom, 24)
         }
-        .scrollIndicators(.hidden)
         .background(Theme.backgroundBase)
-        .toolbar(.hidden, for: .navigationBar)
+        .hidesNavigationBar()
         .sheet(isPresented: $isAddSheetPresented) {
             AddToLibrarySheet()
         }
-        .sensoryFeedback(.selection, trigger: filter)
+        .haptic(.selection, trigger: filter)
     }
 
     // MARK: Filters
 
     private var filterBar: some View {
-        ScrollView(.horizontal) {
+        ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 if filter != nil {
                     Button {
-                        withAnimation(.snappy) { filter = nil }
+                        withAnimation(Theme.Motion.snappy) { filter = nil }
                     } label: {
                         Image(systemName: "xmark")
                             .font(.system(size: 13, weight: .bold))
@@ -65,13 +64,12 @@ struct LibraryView: View {
                 ForEach(Filter.allCases) { option in
                     if filter == nil || filter == option {
                         FilterPill(title: option.rawValue, isSelected: filter == option) {
-                            withAnimation(.snappy) { filter = filter == option ? nil : option }
+                            withAnimation(Theme.Motion.snappy) { filter = filter == option ? nil : option }
                         }
                     }
                 }
             }
         }
-        .scrollIndicators(.hidden)
     }
 
     // MARK: Content
@@ -135,7 +133,7 @@ struct LibraryView: View {
                 Image(systemName: "plus")
                     .font(.system(size: 26, weight: .light))
                     .foregroundStyle(Theme.accent)
-                    .frame(width: 64, height: 64)
+                    .frame(width: ScreenMetrics.libraryRowArtwork, height: ScreenMetrics.libraryRowArtwork)
                     .background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.artwork, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: Theme.Radius.artwork, style: .continuous)
@@ -174,7 +172,7 @@ struct LibraryItemRow: View {
             shell.push(.collection(collection))
         } label: {
             HStack(spacing: 12) {
-                CollectionArtwork(collection: collection, songs: songs, size: 64)
+                CollectionArtwork(collection: collection, songs: songs, size: ScreenMetrics.libraryRowArtwork)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(collection.title(in: libraryStore))
@@ -229,7 +227,7 @@ struct EmptyStateText: View {
     var body: some View {
         VStack(spacing: 8) {
             Text(title)
-                .font(.system(.headline, weight: .bold))
+                .font(.system(.headline).weight(.bold))
                 .foregroundStyle(Theme.textPrimary)
             Text(message)
                 .font(.subheadline)
@@ -275,7 +273,7 @@ private struct AddToLibrarySheet: View {
             dismiss()
             Task {
                 // Let the sheet finish dismissing before the next screen appears.
-                try? await Task.sleep(for: .milliseconds(400))
+                try? await Task.sleep(seconds: 0.4)
                 action()
             }
         } label: {
@@ -287,7 +285,7 @@ private struct AddToLibrarySheet: View {
                     .background(Theme.surfaceRaised, in: Circle())
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
-                        .font(.system(.body, weight: .semibold))
+                        .font(.system(.body).weight(.semibold))
                         .foregroundStyle(Theme.textPrimary)
                     Text(message)
                         .font(.subheadline)

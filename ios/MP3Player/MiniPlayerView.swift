@@ -17,7 +17,7 @@ struct MiniPlayerView: View {
     @State private var dragOffset: CGFloat = 0
     @State private var skipCount = 0
 
-    static let height: CGFloat = 64
+    static let height: CGFloat = ScreenMetrics.miniPlayerHeight
 
     var body: some View {
         ZStack {
@@ -32,8 +32,8 @@ struct MiniPlayerView: View {
     }
 
     private func content(for song: Song) -> some View {
-        HStack(spacing: 10) {
-            SongArtwork(id: song.id, image: player.artworkImage, size: 46, cornerRadius: 8)
+        HStack(spacing: ScreenMetrics.isCompact ? 8 : 10) {
+            SongArtwork(id: song.id, image: player.artworkImage, size: ScreenMetrics.miniPlayerArtwork, cornerRadius: 8)
                 .shadow(color: .black.opacity(0.3), radius: 6, y: 3)
                 .matchedGeometryEffect(id: PlayerGeometry.artwork, in: namespace)
 
@@ -42,7 +42,7 @@ struct MiniPlayerView: View {
             playPauseButton
             nextButton
         }
-        .padding(.leading, 9)
+        .padding(.leading, ScreenMetrics.isCompact ? 8 : 9)
         .padding(.trailing, 4)
         .frame(maxHeight: .infinity)
         .background {
@@ -69,7 +69,7 @@ struct MiniPlayerView: View {
         .contentShape(Rectangle())
         .onTapGesture { expand() }
         .gesture(swipeGesture)
-        .sensoryFeedback(.impact(weight: .medium), trigger: skipCount)
+        .haptic(.medium, trigger: skipCount)
         .accessibilityElement(children: .contain)
     }
 
@@ -77,7 +77,7 @@ struct MiniPlayerView: View {
     private func titles(for song: Song) -> some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(song.title)
-                .font(.system(.subheadline, weight: .semibold))
+                .font(.system(.subheadline).weight(.semibold))
                 .foregroundStyle(Theme.textPrimary)
                 .lineLimit(1)
             Text(song.displayArtist)
@@ -104,12 +104,12 @@ struct MiniPlayerView: View {
             Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                 .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(Theme.textPrimary)
-                .contentTransition(.symbolEffect(.replace))
+                .symbolReplaceTransition()
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.pressable)
-        .sensoryFeedback(.impact(weight: .light), trigger: player.isPlaying)
+        .haptic(.light, trigger: player.isPlaying)
         .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
     }
 
@@ -121,7 +121,7 @@ struct MiniPlayerView: View {
             Image(systemName: "forward.fill")
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(Theme.textPrimary)
-                .symbolEffect(.bounce.down, value: skipCount)
+                .symbolBounce(value: skipCount, down: true)
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }

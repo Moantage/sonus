@@ -37,7 +37,7 @@ struct OnboardingView: View {
                 HStack {
                     Spacer()
                     Button("Skip") { finish() }
-                        .font(.system(.subheadline, weight: .semibold))
+                        .font(.system(.subheadline).weight(.semibold))
                         .foregroundStyle(Theme.textSubtle)
                         .frame(minWidth: 44, minHeight: 44)
                         .padding(.horizontal, 16)
@@ -56,12 +56,12 @@ struct OnboardingView: View {
                         Capsule()
                             .fill(index == page ? Theme.accent : Theme.textPrimary.opacity(0.2))
                             .frame(width: index == page ? 26 : 7, height: 7)
-                            .animation(.spring(duration: 0.3), value: page)
+                            .animation(.spring(response: 0.3, dampingFraction: 1), value: page)
                     }
                 }
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel("Page \(page + 1) of \(pages.count)")
-                .padding(.bottom, 32)
+                .padding(.bottom, ScreenMetrics.isCompact ? 20 : 32)
 
                 PrimaryButton(title: page == pages.count - 1 ? "Get started" : "Continue") {
                     if page < pages.count - 1 {
@@ -71,28 +71,29 @@ struct OnboardingView: View {
                     }
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 32)
+                .padding(.bottom, ScreenMetrics.isCompact ? 20 : 32)
             }
         }
-        .sensoryFeedback(.selection, trigger: page)
+        .haptic(.selection, trigger: page)
     }
 
     private func pageView(_ page: Page, isFirst: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
+        let tile: CGFloat = ScreenMetrics.isCompact ? 68 : 88
+        return VStack(alignment: .leading, spacing: ScreenMetrics.isCompact ? 14 : 20) {
             Spacer()
             if isFirst {
-                BrandLogoTile(size: 88)
+                BrandLogoTile(size: tile)
             } else {
                 Image(systemName: page.icon)
-                    .font(.system(size: 38, weight: .semibold))
+                    .font(.system(size: ScreenMetrics.isCompact ? 30 : 38, weight: .semibold))
                     .foregroundStyle(Theme.accent)
-                    .frame(width: 88, height: 88)
+                    .frame(width: tile, height: tile)
                     .background(Theme.surfaceRaised, in: RoundedRectangle(cornerRadius: 26, style: .continuous))
                     .accessibilityHidden(true)
             }
 
             Text(page.title)
-                .font(.system(.largeTitle, weight: .bold))
+                .font(.emberDisplay)
                 .foregroundStyle(Theme.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -105,7 +106,7 @@ struct OnboardingView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 28)
+        .padding(.horizontal, ScreenMetrics.isCompact ? 24 : 28)
         .accessibilityElement(children: .combine)
     }
 

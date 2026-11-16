@@ -65,16 +65,23 @@ struct ContentView: View {
         }
         .task {
             player.syncLibrary(with: libraryStore.songs)
+            #if DEBUG
+            // Screenshot runs can't answer the tracking prompt or close an ad.
+            if UIReviewScreen.requested != nil { return }
+            #endif
             ads.attach(player: player, store: store)
             await ads.handleLaunch()
         }
-        .onChange(of: player.currentSong?.id) { _, _ in
+        #if DEBUG
+        .task { await UIReviewScreen.open(shell: shell, player: player, library: libraryStore) }
+        #endif
+        .onChange(of: player.currentSong?.id) { _ in
             ads.songDidChange()
         }
-        .onChange(of: libraryStore.songs) { _, songs in
+        .onChange(of: libraryStore.songs) { songs in
             player.syncLibrary(with: songs)
         }
-        .onChange(of: hasSong) { _, hasSong in
+        .onChange(of: hasSong) { hasSong in
             if !hasSong { shell.isPlayerExpanded = false }
         }
         .task(id: player.currentSong?.id) {
@@ -86,26 +93,48 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             isKeyboardVisible = false
         }
-        .sensoryFeedback(.impact(weight: .light), trigger: shell.playRequestCount)
-        .sensoryFeedback(.impact(flexibility: .soft), trigger: shell.isPlayerExpanded)
+        .haptic(.light, trigger: shell.playRequestCount)
+        .haptic(.soft(1), trigger: shell.isPlayerExpanded)
     }
 
     // MARK: Tabs
 
     /// A system TabView with its tab bar hidden (Ember draws its own): each tab keeps its scroll
     /// position and navigation stack, and inactive tabs leave the screen, VoiceOver included.
+    /// iOS 15 can't hide a TabView's bar, so there the tabs are stacked and only the selected
+    /// one is shown, which keeps the same behaviour.
+    @ViewBuilder
     private var tabs: some View {
-        TabView(selection: $shell.selectedTab) {
-            ForEach(AppTab.allCases) { tab in
-                NavigationStack(path: shell.path(for: tab)) {
-                    root(for: tab)
-                        .navigationDestination(for: Route.self) { route in
-                            destination(for: route)
-                        }
+        if #available(iOS 16.0, *), !DeviceProfile.usesLegacyUI {
+            TabView(selection: $shell.selectedTab) {
+                ForEach(AppTab.allCases) { tab in
+                    tabStack(for: tab)
+                        .toolbar(.hidden, for: .tabBar)
+                        .tag(tab)
                 }
-                .toolbar(.hidden, for: .tabBar)
-                .tag(tab)
             }
+        } else {
+            ZStack {
+                ForEach(AppTab.allCases) { tab in
+                    // A tab is built the first time it's opened, as TabView does.
+                    if shell.visitedTabs.contains(tab) {
+                        let isSelected = shell.selectedTab == tab
+                        tabStack(for: tab)
+                            .opacity(isSelected ? 1 : 0)
+                            .allowsHitTesting(isSelected)
+                            .accessibilityHidden(!isSelected)
+                            .zIndex(isSelected ? 1 : 0)
+                    }
+                }
+            }
+        }
+    }
+
+    private func tabStack(for tab: AppTab) -> some View {
+        RouteNavigationStack(path: shell.path(for: tab)) {
+            root(for: tab)
+        } destination: { route in
+            destination(for: route)
         }
     }
 
@@ -131,10 +160,10 @@ struct ContentView: View {
     // MARK: Bottom chrome
 
     private var bottomChrome: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: ScreenMetrics.isCompact ? 4 : 6) {
             if hasSong {
                 MiniPlayerView(namespace: playerNamespace)
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, ScreenMetrics.isCompact ? 6 : 8)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
@@ -207,17 +236,17 @@ struct EmberTabBar: View {
                         selection = tab
                     }
                 } label: {
-                    VStack(spacing: 4) {
+                    VStack(spacing: ScreenMetrics.isCompact ? 2 : 4) {
                         Image(systemName: isSelected ? tab.selectedIcon : tab.icon)
-                            .font(.system(size: 22, weight: isSelected ? .semibold : .regular))
-                            .symbolEffect(.bounce.down, value: bounces[tab, default: 0])
-                            .frame(height: 26)
+                            .font(.system(size: ScreenMetrics.tabIconSize, weight: isSelected ? .semibold : .regular))
+                            .symbolBounce(value: bounces[tab, default: 0], down: true)
+                            .frame(height: ScreenMetrics.tabIconSize + 4)
                         Text(tab.title)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: ScreenMetrics.isCompact ? 10 : 11, weight: .medium))
                     }
                     .foregroundStyle(isSelected ? Theme.accent : Theme.textSubtle)
                     .animation(Theme.Motion.snappy, value: isSelected)
-                    .frame(maxWidth: .infinity, minHeight: 50)
+                    .frame(maxWidth: .infinity, minHeight: ScreenMetrics.tabBarHeight)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(PressableButtonStyle(scale: 0.9))
@@ -230,9 +259,9 @@ struct EmberTabBar: View {
             }
         }
         .padding(.top, 2)
-        .sensoryFeedback(.selection, trigger: selection)
+        .haptic(.selection, trigger: selection)
         .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(.isTabBar)
+        .accessibilityTabBarTrait()
     }
 }
 
@@ -244,7 +273,7 @@ struct ToastView: View {
 
     var body: some View {
         Text(message)
-            .font(.system(.subheadline, weight: .semibold))
+            .font(.system(.subheadline).weight(.semibold))
             .foregroundStyle(Theme.accentInk)
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
