@@ -127,8 +127,12 @@ struct UserRepository {
         ])
     }
 
+    /// Deletes everything Sonus stores for the user in Firestore. Firestore doesn't delete
+    /// sub-documents with their parent, so the synced library goes first.
     func deleteProfile(uid: String) async throws {
-        try await db.collection("users").document(uid).delete()
+        let user = db.collection("users").document(uid)
+        try await user.collection("library").document("snapshot").delete()
+        try await user.delete()
     }
 
     // MARK: - Helpers

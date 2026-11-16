@@ -25,6 +25,7 @@ const sidebars: SidebarsConfig = {
     },
     'compatibility/opensubsonic',
     'privacy',
+    'terms',
     'contributing',
   ],
 };

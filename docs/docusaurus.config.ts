@@ -118,6 +118,7 @@ const config: Config = {
           items: [
             {label: 'Contributing', to: '/contributing'},
             {label: 'Privacy', to: '/privacy'},
+            {label: 'Terms', to: '/terms'},
             {label: 'Changelog', to: '/changelog'},
           ],
         },

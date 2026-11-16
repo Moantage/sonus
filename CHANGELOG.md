@@ -2,6 +2,19 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-11-16 — Real privacy policy and terms; account deletion removes the synced library
+
+- New full privacy policy at `/privacy` (replaces the short "Privacy and security" page) and new
+  terms of use at `/terms` on the docs site. Both name the controller (Dhruva Bisht, trading as
+  Novora Labs, Dublin, Ireland) and the contact address novoralabs+support@protonmail.com. The
+  privacy page keeps the credential and networking commitments. Terms is added to the sidebar and
+  footer.
+- The app's Terms, Privacy Policy and contact links now point to these pages instead of
+  `example.com` placeholders (`ConsentConfig`).
+- Deleting an account now also deletes the synced library (`users/{uid}/library/snapshot`).
+  Firestore doesn't delete sub-documents with their parent, so it used to stay behind. The
+  consent screen's retention text says so.
+
 ## 2026-11-16 — Sonus is free for everyone: Premium, ads and tracking removed; build 5
 
 - Every feature is free. Profile banners, high-quality audio and Sync across devices no longer

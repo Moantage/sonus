@@ -4,13 +4,14 @@ import SwiftUI
 /// materially — users will be re-prompted to accept on next launch.
 enum ConsentConfig {
     static let currentVersion = "1.1"
-    static let lastUpdated = "15 November 2026"
+    static let lastUpdated = "16 November 2026"
 
-    // TODO: replace with your real published URLs and company details.
-    static let termsURL = URL(string: "https://example.com/terms")!
-    static let privacyURL = URL(string: "https://example.com/privacy")!
-    static let controllerName = "Novora Labs"           // your company / legal name
-    static let contactEmail = "privacy@example.com"     // your data-protection contact
+    // Published on the docs site (docs/docs/terms.md and docs/docs/privacy.md). Keep the version and
+    // date there in step with the two values above.
+    static let termsURL = URL(string: "https://moantage.github.io/sonus/terms")!
+    static let privacyURL = URL(string: "https://moantage.github.io/sonus/privacy")!
+    static let controllerName = "Dhruva Bisht, trading as Novora Labs"
+    static let contactEmail = "novoralabs+support@protonmail.com"
 }
 
 /// First-run GDPR agreement gate. Shown after sign-in until the user has
@@ -186,7 +187,9 @@ struct ConsentView: View {
         ),
         Section(
             title: "How long we keep it",
-            body: "We keep your data for as long as your account exists. You can delete your account at any time from the Profile screen, which removes your profile data. Some records may be retained where required by law."
+            body: "We keep your data for as long as your account exists. You can delete your account at any time from the "
+                + "Profile screen, which removes your profile, your synced library and your sign-in account. Some records may "
+                + "be retained where required by law."
         ),
         Section(
             title: "Your rights",
