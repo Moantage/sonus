@@ -2,7 +2,7 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
-## 2026-11-16 — Sonus is free for everyone: Premium, ads and tracking removed
+## 2026-11-16 — Sonus is free for everyone: Premium, ads and tracking removed; build 5
 
 - Every feature is free. Profile banners, high-quality audio and Sync across devices no longer
   need Premium. The Profile screen loses the Go Premium card, the Free plan badge and the locks;
@@ -17,6 +17,7 @@ Every change merged into `main`, newest first. Each entry has a date, a title an
   1.0 to 1.1, so existing users accept it once more.
 - The Firestore profile still writes `isPremium: false` on create because the deployed rules
   require it; the app never reads it.
+- Build number 4 → 5 for the next TestFlight upload.
 
 ## 2026-11-09 — Sonus runs on iOS 15 and the iPod touch (7th generation); build 4
 
