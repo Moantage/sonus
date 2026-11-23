@@ -14,6 +14,12 @@ public enum SourceLoadError: Error, Equatable, Sendable, CustomStringConvertible
     /// This build can't read this kind of source yet.
     case unsupportedKind(MusicSource.Kind)
     case missingRepository
+    /// An OpenSubsonic server reported an error (wrong password, ...).
+    case openSubsonic(OpenSubsonicError)
+    /// The address answers, but not as an OpenSubsonic server.
+    case notAMusicServer
+    /// The source needs a user name and password that aren't in the Keychain.
+    case missingCredentials
 
     public var description: String {
         switch self {
@@ -35,6 +41,12 @@ public enum SourceLoadError: Error, Equatable, Sendable, CustomStringConvertible
             "\(kind.rawValue) sources aren't supported yet."
         case .missingRepository:
             "This GitHub source has no repository set."
+        case .openSubsonic(let error):
+            error.description
+        case .notAMusicServer:
+            "That address isn't a Subsonic-compatible music server. Check the address and port."
+        case .missingCredentials:
+            "Sign in to this server again: its username and password are missing."
         }
     }
 

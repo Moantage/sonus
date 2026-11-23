@@ -9,7 +9,7 @@ struct DownloadTicket: Codable {
     let fileName: String
     /// Lowercase hex SHA-256 the source published; the file is checked against it.
     let sha256: String?
-    /// True when the request carries a secret header. Its resume data then contains that header,
+    /// True when the request carries a secret (header or query token). Its resume data contains it,
     /// so it's kept in memory only, never written to disk.
     let isAuthorized: Bool
 

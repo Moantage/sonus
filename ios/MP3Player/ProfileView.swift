@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Profile & settings, opened from the avatar on any tab: banner, playback settings, profile
-/// banner and sync, account details, security, sign out and account deletion. Everything in Sonus
+/// Profile & settings, opened from the avatar on any tab: banner, playback settings, music
+/// sources, profile banner and sync, account details, security, sign out and account deletion. Everything in Sonus
 /// is free; there are no plans or purchases.
 struct ProfileView: View {
     @EnvironmentObject private var authManager: AuthenticationManager
@@ -30,6 +30,7 @@ struct ProfileView: View {
             VStack(alignment: .leading, spacing: ScreenMetrics.sectionSpacing) {
                 header
                 playbackSection
+                MusicSourcesSection()
                 profileSection
                 accountSection
                 securitySection
