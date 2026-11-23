@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Advanced playback controls (free for everyone): pitch-preserved playback speed, 15-second
-/// skips and a sleep timer.
+/// Advanced playback controls (free for everyone): pitch-preserved playback speed, the equaliser,
+/// 15-second skips and a sleep timer.
 struct AdvancedControlsSheet: View {
     @EnvironmentObject private var player: AudioPlayerManager
     @Environment(\.dismiss) private var dismiss
@@ -15,6 +15,7 @@ struct AdvancedControlsSheet: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 16) {
                     speedSection
+                    EqualizerCard()
                     skipSection
                     sleepSection
                 }

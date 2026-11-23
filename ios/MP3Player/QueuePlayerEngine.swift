@@ -66,6 +66,7 @@ final class QueuePlayerEngine {
 
     /// Replaces everything with `item`.
     func replace(with item: SonusPlayerItem) {
+        EqualizerController.shared.attach(to: item)
         player.removeAllItems()
         player.insert(item, after: nil)
         watch(item)
@@ -86,6 +87,7 @@ final class QueuePlayerEngine {
             player.actionAtItemEnd = .pause
             return
         }
+        EqualizerController.shared.attach(to: item)
         player.insert(item, after: current)
         player.actionAtItemEnd = .advance
     }
