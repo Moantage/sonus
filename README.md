@@ -19,6 +19,7 @@
 ## What it does
 
 - **Stream** songs straight from your own storage, or **download** them for offline play.
+- A six-band **equaliser** with presets, for every song you play.
 - Connect through an open, documented spec:
   - **Sonus Manifest**: one `sonus.json` file next to your music on any static host.
   - **Sonus Server API**: an OpenAPI 3.1 contract for dynamic servers.

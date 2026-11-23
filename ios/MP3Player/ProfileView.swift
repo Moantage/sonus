@@ -133,7 +133,7 @@ extension ProfileView {
 
     private var playbackSection: some View {
         SettingsSection(title: "Playback") {
-            SettingsRow(icon: "slider.horizontal.3", title: "Playback controls", detail: "Speed, skip and sleep timer") {
+            SettingsRow(icon: "slider.horizontal.3", title: "Playback controls", detail: "Speed, equaliser, skip and sleep timer") {
                 showPlaybackControls = true
             }
 

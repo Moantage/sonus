@@ -110,7 +110,7 @@ struct PlayerTransport: View {
         }
         .buttonStyle(.pressable)
         .accessibilityLabel("Playback controls")
-        .accessibilityHint("Speed, skip and sleep timer")
+        .accessibilityHint("Speed, equaliser, skip and sleep timer")
     }
 }
 

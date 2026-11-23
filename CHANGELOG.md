@@ -2,6 +2,27 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-11-23 — Six-band equaliser
+
+- New **Equaliser** card in Playback controls (Now Playing, or Profile → Playback controls): an
+  on/off switch, a live frequency-response curve, nine presets (Flat, Bass boost, Bass cut, Treble
+  boost, Vocal, Acoustic, Electronic, Rock, Late night) and six bands at 60, 150, 400 Hz, 1, 2.4 and
+  15 kHz, each ±12 dB in 0.5 dB steps. Picking a preset or moving a band switches it on;
+  double-tap a band for 0 dB. Bands are adjustable controls for VoiceOver. Settings are saved on
+  the device.
+- It works for every source (imported files, downloads, manifest, GitHub and OpenSubsonic
+  streams): each player item gets an `MTAudioProcessingTap` in its audio mix, including the
+  preloaded next song. AVFoundation doesn't apply audio mixes over AirPlay, so AirPlay plays
+  without the equaliser; the card says so.
+- Boosts come with automatic headroom (the largest boost is taken off the overall level), so
+  boosted songs don't clip. Changing settings ramps the gain over one audio block, and switching
+  on or off crossfades, so neither clicks.
+- SonusCore: `EqualizerSettings`, `EqualizerPreset`, `BiquadCoefficients` (RBJ peaking filters),
+  `EqualizerResponse` for the curve, and `EqualizerProcessor`, which is safe to update from the
+  main thread while audio renders (the render side only tries the lock and never allocates).
+  Tests cover filter maths, sine waves through the processor, stereo, live updates and bypass.
+- DEBUG only: `-SonusDebugEqualizer` logs each tap's processed frames and input/output levels.
+
 ## 2026-11-23 — Stream from OpenSubsonic servers (Navidrome, Gonic, Ampache)
 
 - New **Music server** option under **Your Library → +**: enter a server address, username and
