@@ -50,6 +50,7 @@ Playlists (`getPlaylists`), server-side search (`search3`) and a lower bit rate 
 (`maxBitRate`) are planned.
 
 :::note Status
-OpenSubsonic support is new. It's tested against a server that follows the API documentation;
-reports from Navidrome, Gonic, Ampache and other servers are welcome as GitHub issues.
+OpenSubsonic support is new. Tested with **Navidrome 0.64.2** (MP3, FLAC and OGG, the last one
+converted by the server). Reports from Gonic, Ampache and other servers are welcome as GitHub
+issues.
 :::

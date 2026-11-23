@@ -24,6 +24,8 @@ Every change merged into `main`, newest first. Each entry has a date, a title an
   MD5 (Linux has no CryptoKit), and tests against a local mock server.
 - Downloads with a query token keep their resume data in memory only, like header secrets.
 - Docs: the OpenSubsonic page now describes how to connect and which endpoints Sonus uses.
+- Tested end to end with Navidrome 0.64.2 in Docker: sign-in, listing, MP3/FLAC streaming with
+  byte ranges, OGG converted to MP3, cover art and wrong-password errors.
 
 ## 2026-11-16 — Sample tracks for app review and testers
 

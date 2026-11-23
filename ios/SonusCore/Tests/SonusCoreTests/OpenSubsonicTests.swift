@@ -203,7 +203,8 @@ struct OpenSubsonicLoaderTests {
         #expect(third.url.query?.contains("format=mp3") == true)
         #expect(third.mimeType == "audio/mpeg")
         #expect(third.size == nil)
-        #expect(library.warnings.count == 1)
+        // Converting is normal, not a problem to warn about.
+        #expect(library.warnings.isEmpty)
 
         for track in library.tracks {
             let query = MockSubsonic.query(of: track.url.absoluteString)

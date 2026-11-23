@@ -39,24 +39,16 @@ public struct OpenSubsonicLoader: Sendable {
 
         var tracks: [RemoteTrack] = []
         var seen: Set<String> = []
-        var transcoded = 0
         for album in albums.compactMap({ $0 }) {
             for song in album.song?.values ?? [] where song.isVideo != true {
                 guard seen.insert(song.id.value).inserted,
                       let track = Self.track(for: song, in: album, endpoints: session.endpoints) else { continue }
-                if track.url.query?.contains("format=mp3") == true {
-                    transcoded += 1
-                }
                 tracks.append(track)
             }
         }
         let failed = albums.filter { $0 == nil }.count
         if failed > 0 {
             warnings.append("\(failed) album\(failed == 1 ? "" : "s") couldn't be read and will be tried again next refresh.")
-        }
-        if transcoded > 0 {
-            warnings.append("\(transcoded) song\(transcoded == 1 ? " is" : "s are") in a format iOS can't play, "
-                            + "so the server converts \(transcoded == 1 ? "it" : "them") to MP3 while streaming.")
         }
         return LoadedLibrary(name: serverURL.host, tracks: tracks, warnings: warnings)
     }
