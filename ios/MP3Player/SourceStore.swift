@@ -1,8 +1,8 @@
 import Foundation
 import SonusCore
 
-/// The person's music sources: Sonus Manifests and GitHub repositories today, Sonus Server and
-/// OpenSubsonic later.
+/// The person's music sources: Sonus Manifests, GitHub repositories and OpenSubsonic servers
+/// (Navidrome, Gonic, Ampache, ...). Sonus Server comes later.
 ///
 /// The list lives in Application Support (`sources.json`) and holds no secrets. A source's token
 /// lives only in the Keychain, under the source's ``MusicSource/credentialKey``, and is sent
@@ -89,7 +89,10 @@ final class SourceStore: ObservableObject {
         switch source.kind {
         case .github:
             return .gitHub(token: secret, endpoints: gitHubEndpoints)
-        case .manifest, .sonusServer, .openSubsonic:
+        case .openSubsonic:
+            // A fresh salt each time: the server sees a different token on every stream.
+            return OpenSubsonicCredentials(secret: secret)?.authorization(for: source.url)
+        case .manifest, .sonusServer:
             guard let host = source.url.host?.lowercased() else { return nil }
             return .bearer(secret, hosts: [host])
         }
@@ -100,8 +103,10 @@ final class SourceStore: ObservableObject {
             return StreamingAccess(usesLoader: false, authorization: nil)
         }
         let authorization = authorization(for: source)
-        // GitHub serves audio as application/octet-stream; the loader states the real type.
-        return StreamingAccess(usesLoader: authorization != nil || source.kind == .github, authorization: authorization)
+        // GitHub serves audio as application/octet-stream and OpenSubsonic stream URLs have no file
+        // extension; the loader states the real type. OpenSubsonic also needs its query token.
+        let needsLoader = source.kind == .github || source.kind == .openSubsonic
+        return StreamingAccess(usesLoader: authorization != nil || needsLoader, authorization: authorization)
     }
 
     private func credential(for source: MusicSource) -> String? {
@@ -130,6 +135,20 @@ final class SourceStore: ObservableObject {
         into library: LibraryStore
     ) async throws -> MusicSource {
         try await add(.github(repository, name: name), hasCustomName: name != nil, token: token, into: library)
+    }
+
+    /// Adds an OpenSubsonic server (Navidrome, Gonic, Ampache, ...), or signs in to it again and
+    /// refreshes it if it's already there. The sign-in is checked and the library listed first:
+    /// a server that can't be read isn't added. The password goes only to the Keychain.
+    @discardableResult
+    func addOpenSubsonicSource(
+        serverURL: URL,
+        credentials: OpenSubsonicCredentials,
+        name: String? = nil,
+        into library: LibraryStore
+    ) async throws -> MusicSource {
+        try await add(.openSubsonic(serverURL: serverURL, name: name), hasCustomName: name != nil,
+                      token: credentials.encodedSecret, into: library)
     }
 
     /// Re-reads a source and updates its songs in place, matched by the source's stable track IDs.
@@ -248,7 +267,12 @@ final class SourceStore: ObservableObject {
         case .github:
             guard let repository = source.github else { throw SourceLoadError.missingRepository }
             return try await GitHubLibraryLoader(client: httpClient, endpoints: gitHubEndpoints).load(repository, token: secret)
-        case .sonusServer, .openSubsonic:
+        case .openSubsonic:
+            guard let credentials = secret.flatMap(OpenSubsonicCredentials.init(secret:)) else {
+                throw SourceLoadError.missingCredentials
+            }
+            return try await OpenSubsonicLoader(client: httpClient).load(serverURL: source.url, credentials: credentials)
+        case .sonusServer:
             throw SourceLoadError.unsupportedKind(source.kind)
         }
     }

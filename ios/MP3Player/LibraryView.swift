@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Your Library: collections and playlists, filterable with pills. "+" creates a playlist or
-/// imports music.
+/// Your Library: collections and playlists, filterable with pills. "+" creates a playlist,
+/// imports music or connects a music server.
 struct LibraryView: View {
     enum Filter: String, CaseIterable, Identifiable {
         case playlists = "Playlists"
@@ -16,12 +16,13 @@ struct LibraryView: View {
 
     @State private var filter: Filter?
     @State private var isAddSheetPresented = false
+    @State private var isConnectServerPresented = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
                 TabHeader(title: "Your Library") {
-                    HeaderIconButton(systemImage: "plus", label: "Create playlist or import music") {
+                    HeaderIconButton(systemImage: "plus", label: "Create playlist, import music or connect a server") {
                         isAddSheetPresented = true
                     }
                 }
@@ -37,7 +38,10 @@ struct LibraryView: View {
         .background(Theme.backgroundBase)
         .hidesNavigationBar()
         .sheet(isPresented: $isAddSheetPresented) {
-            AddToLibrarySheet()
+            AddToLibrarySheet { isConnectServerPresented = true }
+        }
+        .sheet(isPresented: $isConnectServerPresented) {
+            ConnectServerSheet()
         }
         .haptic(.selection, trigger: filter)
     }
@@ -244,6 +248,8 @@ struct EmptyStateText: View {
 private struct AddToLibrarySheet: View {
     @EnvironmentObject private var shell: ShellState
     @Environment(\.dismiss) private var dismiss
+    /// Opens the music-server sign-in, which Your Library presents.
+    let connectServer: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -260,6 +266,13 @@ private struct AddToLibrarySheet: View {
                 message: "Add audio files from your iPhone, iCloud Drive or a connected server"
             ) {
                 shell.isImporterPresented = true
+            }
+            option(
+                icon: "server.rack",
+                title: "Music server",
+                message: "Stream from Navidrome, Gonic, Ampache or another Subsonic server"
+            ) {
+                connectServer()
             }
         }
         .padding(.horizontal, 20)

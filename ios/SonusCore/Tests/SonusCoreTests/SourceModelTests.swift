@@ -9,12 +9,12 @@ import Testing
 struct SourceModelTests {
     static let manifestURL = URL(string: "https://music.example.com/sonus.json")!
 
-    @Test("Only manifest and GitHub sources are implemented; the server kinds are reserved")
+    @Test("Manifest, GitHub and OpenSubsonic sources are implemented; Sonus Server is reserved")
     func supportedKinds() {
         #expect(MusicSource.Kind.manifest.isSupported)
         #expect(MusicSource.Kind.github.isSupported)
         #expect(!MusicSource.Kind.sonusServer.isSupported)
-        #expect(!MusicSource.Kind.openSubsonic.isSupported)
+        #expect(MusicSource.Kind.openSubsonic.isSupported)
     }
 
     @Test("A source list round-trips through JSON without any secret in it")

@@ -28,8 +28,8 @@ nothing new to learn; the only difference is that the music comes from your serv
 
 :::caution Draft
 The spec on this site is **version 1.0-draft** and may still change. Today's app imports from the
-Files app. Support for manifests, the Server API and OpenSubsonic is being built and will ship in
-upcoming releases. The [changelog](/changelog) tracks every change.
+Files app and streams from OpenSubsonic servers. Support for manifests and the Server API is being
+built and will ship in upcoming releases. The [changelog](/changelog) tracks every change.
 :::
 
 ## Open source

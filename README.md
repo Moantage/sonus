@@ -25,8 +25,9 @@
   - **OpenSubsonic**: works with Navidrome, Gonic, Ampache and other existing NAS servers.
 - Server credentials stay in the iPhone Keychain and are only ever sent to your server.
 
-> **Status:** the spec is `1.0-draft`. The current app imports from the Files app. Manifest,
-> Server API and OpenSubsonic support are in development; see the [changelog](CHANGELOG.md).
+> **Status:** the spec is `1.0-draft`. The app imports from the Files app and streams from
+> OpenSubsonic servers. Manifest and Server API support are in development; see the
+> [changelog](CHANGELOG.md).
 
 ## Repository layout
 

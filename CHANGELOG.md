@@ -2,6 +2,29 @@
 
 Every change merged into `main`, newest first. Each entry has a date, a title and a description.
 
+## 2026-11-23 — Stream from OpenSubsonic servers (Navidrome, Gonic, Ampache)
+
+- New **Music server** option under **Your Library → +**: enter a server address, username and
+  password to add a Navidrome, Gonic, Ampache, Airsonic-Advanced or other Subsonic-compatible
+  server. Its songs join the library, stream with seeking, and download for offline play like any
+  other source.
+- New **Music sources** section in Profile lists every source with its song count and last
+  refresh, and lets you refresh or remove it. Removing a source removes its songs and downloads.
+- Sign-in uses Subsonic token authentication: requests carry a salted MD5 token, never the
+  password. The username and password live only in the Keychain. Stored stream URLs hold no
+  credentials; `RequestAuthorization` now supports secrets in query parameters as well as headers,
+  and adds the token only for the server's host over https (or plain http on the local network).
+- Library listing: `ping`, then `getAlbumList2` pages of 500 albums and `getAlbum` for each, six at
+  a time. Songs stream the original file (`format=raw`). Formats iOS can't play are requested as
+  MP3, which the server transcodes. Albums that fail to load are skipped with a warning and tried
+  again on the next refresh.
+- Clear errors for a wrong password, servers that don't accept token sign-in (LDAP), addresses
+  that aren't music servers, and plain `http` to internet hosts.
+- SonusCore: `OpenSubsonicLoader`, `OpenSubsonicCredentials`, `OpenSubsonicEndpoints`, a portable
+  MD5 (Linux has no CryptoKit), and tests against a local mock server.
+- Downloads with a query token keep their resume data in memory only, like header secrets.
+- Docs: the OpenSubsonic page now describes how to connect and which endpoints Sonus uses.
+
 ## 2026-11-16 — Sample tracks for app review and testers
 
 - Three 20-second test tracks at `/samples/sonus-sample-{1,2,3}.mp3` on the docs site

@@ -3,20 +3,31 @@ import Foundation
 import FoundationNetworking
 #endif
 
-/// A secret header and the only hosts allowed to receive it.
+/// A secret (a header or query parameters) and the only hosts allowed to receive it.
 ///
-/// Auth-agnostic: GitHub tokens use it today; Sonus Server bearer tokens and private buckets can
-/// use it later. It is never persisted: build it from the Keychain when it's needed. Its
-/// description redacts the secret, so printing it can't leak the token.
+/// Auth-agnostic: GitHub tokens and manifest bearer tokens use a header; OpenSubsonic servers use
+/// query parameters (`u`, `t`, `s`). It is never persisted: build it from the Keychain when it's
+/// needed. Its description redacts the secret, so printing it can't leak the token.
 public struct RequestAuthorization: Hashable, Sendable, CustomStringConvertible {
+    /// The header that carries the secret; empty when the secret travels as query parameters.
     public let headerField: String
     private let headerValue: String
-    /// Lowercase host names that may receive the header. Matched exactly: no subdomains.
+    /// Query parameters that carry the secret, by name. Empty for header secrets.
+    private let queryParameters: [String: String]
+    /// Lowercase host names that may receive the secret. Matched exactly: no subdomains.
     public let allowedHosts: Set<String>
 
     public init(headerField: String = "Authorization", headerValue: String, allowedHosts: Set<String>) {
         self.headerField = headerField
         self.headerValue = headerValue
+        self.queryParameters = [:]
+        self.allowedHosts = Set(allowedHosts.map { $0.lowercased() })
+    }
+
+    private init(queryParameters: [String: String], allowedHosts: Set<String>) {
+        self.headerField = ""
+        self.headerValue = ""
+        self.queryParameters = queryParameters
         self.allowedHosts = Set(allowedHosts.map { $0.lowercased() })
     }
 
@@ -28,6 +39,17 @@ public struct RequestAuthorization: Hashable, Sendable, CustomStringConvertible 
     /// A GitHub token, sent only to the API, raw and LFS media hosts in `endpoints`.
     public static func gitHub(token: String, endpoints: GitHubEndpoints = .github) -> RequestAuthorization {
         RequestAuthorization(headerValue: "token \(token)", allowedHosts: endpoints.hosts)
+    }
+
+    /// Secret query parameters for the given hosts. Any parameter of the same name already in a
+    /// URL is replaced, so authorizing twice (for example after a redirect) is harmless.
+    public static func query(_ parameters: [String: String], hosts: Set<String>) -> RequestAuthorization {
+        RequestAuthorization(queryParameters: parameters, allowedHosts: hosts)
+    }
+
+    /// Whether the secret travels as query parameters rather than a header.
+    public var usesQueryParameters: Bool {
+        !queryParameters.isEmpty
     }
 
     /// Whether `url` may receive the header: an exact host match over `https`, or plain `http`
@@ -46,22 +68,41 @@ public struct RequestAuthorization: Hashable, Sendable, CustomStringConvertible 
         }
     }
 
-    /// The header to add to a request for `url`; empty when the host isn't allowed.
+    /// The header to add to a request for `url`; empty when the host isn't allowed or the secret
+    /// travels as query parameters.
     public func headers(for url: URL) -> [String: String] {
-        applies(to: url) ? [headerField: headerValue] : [:]
+        applies(to: url) && !headerField.isEmpty ? [headerField: headerValue] : [:]
     }
 
-    /// Sets or removes the header on `request` according to its URL.
+    /// Adds the secret to `request` when its URL may receive it, and otherwise removes a secret
+    /// header. Query secrets are never removed from a URL: Sonus only adds them to allowed hosts.
     public func authorize(_ request: inout URLRequest) {
-        if let url = request.url, applies(to: url) {
-            request.setValue(headerValue, forHTTPHeaderField: headerField)
+        let allowed = request.url.map(applies(to:)) ?? false
+        if !headerField.isEmpty {
+            request.setValue(allowed ? headerValue : nil, forHTTPHeaderField: headerField)
         } else {
-            request.setValue(nil, forHTTPHeaderField: headerField)
+            request.setValue(nil, forHTTPHeaderField: "Authorization")
+        }
+        if allowed, usesQueryParameters, let url = request.url {
+            request.url = Self.url(url, adding: queryParameters)
         }
     }
 
+    /// `url` with `parameters` set, replacing any of the same name, strictly percent-encoded so a
+    /// `+` or `&` in a user name survives.
+    static func url(_ url: URL, adding parameters: [String: String]) -> URL {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: true) else { return url }
+        var items = (components.percentEncodedQueryItems ?? []).filter { parameters[$0.name] == nil }
+        for name in parameters.keys.sorted() {
+            items.append(URLQueryItem(name: name, value: parameters[name]?.strictlyPercentEncoded))
+        }
+        components.percentEncodedQueryItems = items
+        return components.url ?? url
+    }
+
     public var description: String {
-        "RequestAuthorization(\(headerField): <redacted>, hosts: \(allowedHosts.sorted()))"
+        let carrier = usesQueryParameters ? "query \(queryParameters.keys.sorted())" : headerField
+        return "RequestAuthorization(\(carrier): <redacted>, hosts: \(allowedHosts.sorted()))"
     }
 }
 
@@ -143,5 +184,14 @@ public extension URL {
         components.user = nil
         components.password = nil
         return components.url ?? self
+    }
+}
+
+extension String {
+    /// Percent-encodes everything except RFC 3986 unreserved characters.
+    var strictlyPercentEncoded: String {
+        var allowed = CharacterSet.alphanumerics.intersection(CharacterSet(charactersIn: Unicode.Scalar(0)..<Unicode.Scalar(128)))
+        allowed.insert(charactersIn: "-._~")
+        return addingPercentEncoding(withAllowedCharacters: allowed) ?? self
     }
 }

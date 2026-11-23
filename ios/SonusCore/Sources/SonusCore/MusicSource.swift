@@ -1,6 +1,6 @@
 import Foundation
 
-/// A place Sonus reads music from: a Sonus Manifest, a GitHub repository or (later) a server.
+/// A place Sonus reads music from: a Sonus Manifest, a GitHub repository or an OpenSubsonic server.
 ///
 /// Sources hold no secrets. A source that needs one names a Keychain item through
 /// ``credentialKey``; the app stores the token there and nowhere else.
@@ -12,15 +12,16 @@ public struct MusicSource: Codable, Identifiable, Hashable, Sendable {
         case github
         /// Reserved: the Sonus Server API (`spec/openapi.yaml`). Not implemented yet.
         case sonusServer
-        /// Reserved: OpenSubsonic servers such as Navidrome. Not implemented yet.
+        /// An OpenSubsonic server such as Navidrome, Gonic or Ampache. ``MusicSource/url`` is the
+        /// server's base URL; the user name and password live in the Keychain.
         case openSubsonic
 
         /// Whether this build can list and play this kind of source.
         public var isSupported: Bool {
             switch self {
-            case .manifest, .github:
+            case .manifest, .github, .openSubsonic:
                 true
-            case .sonusServer, .openSubsonic:
+            case .sonusServer:
                 false
             }
         }
@@ -71,6 +72,11 @@ public struct MusicSource: Codable, Identifiable, Hashable, Sendable {
     /// A GitHub source for `repository`.
     public static func github(_ repository: GitHubRepository, name: String? = nil) -> MusicSource {
         MusicSource(name: name ?? repository.name, kind: .github, url: repository.webURL, github: repository)
+    }
+
+    /// An OpenSubsonic server source for `serverURL`.
+    public static func openSubsonic(serverURL: URL, name: String? = nil) -> MusicSource {
+        MusicSource(name: name ?? serverURL.host ?? "Music server", kind: .openSubsonic, url: serverURL)
     }
 
     /// True when `other` points at the same library, so adding it again should refresh this one.

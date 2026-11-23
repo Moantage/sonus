@@ -124,7 +124,8 @@ final class DownloadManager: ObservableObject {
         guard starting.remove(song.id) != nil else { return }
 
         let request = RangedRequest.make(url: target, range: nil, authorization: authorization)
-        let isAuthorized = request.value(forHTTPHeaderField: "Authorization") != nil
+        // A secret header or query token (OpenSubsonic) makes the request, and its resume data, secret.
+        let isAuthorized = authorization?.applies(to: target) ?? false
         let ticket = DownloadTicket(songID: song.id, fileName: song.fileName, sha256: song.remoteSHA256, isAuthorized: isAuthorized)
         let resumeData = memoryResumeData.removeValue(forKey: song.id) ?? (isAuthorized ? nil : savedResumeData(for: song.id))
         tasks[song.id] = session.start(request, ticket: ticket, resumeData: resumeData)
